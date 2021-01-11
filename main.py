@@ -1,0 +1,507 @@
+from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton
+from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram.ext import CallbackContext, ConversationHandler
+from telegram.utils.request import Request
+from config import *
+from db import *
+from PIL import Image, ImageDraw, ImageFont
+from picture import write_wish, write_from
+
+logger = getLogger(__name__)
+
+NAME, CONFIRM, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, WISH, FROM_WHOM, FOUND_WISHLIST = range(12)
+
+
+BUTTON1_FIND = "Найти вишлист 🔎"
+BUTTON2_MAKE = "Создать вишлист 📝"
+
+CALLBACK_BUTTON1_FIND = "callback_button_find"
+CALLBACK_BUTTON2_MAKE = "callback_button_make"
+
+CALLBACK_BUTTON3_DONATE = "callback_button3_donate"
+
+CALLBACK_BUTTON_GENERATE_POSTCARD = "callback_button_generate_postcard"
+CALLBACK_BUTTON_CREATE_WISHLIST = "callback_button_create_wishlist"
+TITLES = {
+    CALLBACK_BUTTON_GENERATE_POSTCARD: "Сгенерировать открытку",
+    CALLBACK_BUTTON_CREATE_WISHLIST: "Продолжить",
+}
+BUTTON_ANONYMOUS_SEND = "Отправить анонимно"
+BUTTON_ADD_NAME = "Подписать открытку"
+BUTTON_READY = "Готово! Отправить автору вишлиста!"
+BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
+
+
+def debug_request(f):
+    def inner(*args, **kwargs):
+        try:
+            logger.info(f"Обращение в функцию {f.__name__}")
+            return f(*args, **kwargs)
+        except:
+            logger.exception(f"Ошибка в разработчике {f.__name__}")
+            raise
+    return inner
+
+
+@debug_request
+def start_buttons_handler(update: Update, context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
+        [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
+    ]
+    update.message.reply_text(
+        text='''
+*Привет! Это бот «Вместо открытки»*
+
+Бот позволяет создать благотворительный вишлист: список организаций, в одну из которых ваши друзья могут сделать пожертвование в качестве подарка вам.
+Также бот может найти уже созданный вишлист и отправить поздравительную открытку автору вишлиста. 
+
+Подробнее о боте - /about
+*Выберите режим:*''',
+        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+@debug_request
+def do_create(update: Update, context: CallbackContext):
+    init = update.callback_query.data
+    chat_id = update.callback_query.message.chat.id
+    if init == CALLBACK_BUTTON1_FIND:
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text='Введите название вишлиста используя знак #\n\nпример #VaryaBday13012021',
+            reply_markup=ReplyKeyboardRemove()
+
+        )
+    if init == CALLBACK_BUTTON2_MAKE:
+        logger.debug(init)
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text='''
+<b>Придумайте имя вашего вишлиста.</b>
+Одно слово без пробелов и знаков. Пример ДеньРожденияВари130120''',
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML
+        )
+        return NAME
+
+@debug_request
+def message_handler(update: Update, context: CallbackContext):
+    text = update.message.text
+    if text[0] == '#':
+        wishlistname = text[1:]
+        wishlist = find_wishlist(name=wishlistname, limit=1)
+        if wishlist:
+            context.user_data[FOUND_WISHLIST] = wishlistname
+            keyboard = [[KeyboardButton(TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD])]]
+            if wishlist[0][8] == 1:
+                reply_text = f'''
+⬜️<b>{wishlist[0][1]}</b>⬜️\n
+🔘️ {wishlist[0][2]}
+Как пожертвовать: {wishlist[0][3]}\n'''
+            if wishlist[0][8] == 2:
+                reply_text = f'''
+⬜️<b>{wishlist[0][1]}</b>⬜️\n
+🔘️ {wishlist[0][2]}
+Как пожертвовать: {wishlist[0][3]}\n
+️🔘️{wishlist[0][4]}
+Как пожертвовать: {wishlist[0][5]}\n'''
+            if wishlist[0][8] == 3:
+                reply_text = f'''
+⬜️<b>{wishlist[0][1]}</b>⬜️\n
+🔘️ {wishlist[0][2]}
+Как пожертвовать: {wishlist[0][3]}\n
+🔘️{wishlist[0][4]}
+Как пожертвовать: {wishlist[0][5]}\n
+🔘️{wishlist[0][6]}
+Как пожертвовать: {wishlist[0][7]}\n'''
+            update.message.reply_text(
+                text=f'Вишлист найден!✔️ \n\n\n {reply_text}  \n\n\n Теперь вы знаете что хочет получить автор вишлиста.\n Можете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True
+            )
+        else:
+            update.message.reply_text(
+                text='Вишлист c таким именем не найден. Введите другой вишлист.',
+                reply_markup=ReplyKeyboardRemove()
+            )
+    if text == TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD]:
+        update.message.reply_text(text='Введите пожелание с пометкой "Пожелание:"\n\n\t например "Пожелание: счастья здоровья"')
+
+    if (text.split(':')[0] == 'Пожелание')|(text.split(':')[0] == 'пожелание'):
+        wishtext = ' '.join(text.split(':')[1:])
+        context.user_data[WISH] = wishtext
+        logger.info('user_data: %s', context.user_data)
+        keyboard = [
+            [
+                KeyboardButton(BUTTON_ANONYMOUS_SEND),
+                KeyboardButton(BUTTON_ADD_NAME),
+            ],
+        ]
+        write_wish(text=wishtext, pic_name='pic_lena_big.JPG', new_name='pic_lena_big_text.JPG')
+        context.bot.sendPhoto(
+            chat_id=update.message.chat.id,
+            photo=open('pic_lena_big_text.JPG', 'rb'),
+        )
+        update.message.reply_text(
+            text=f"Вот что получит автор вишлиста",
+            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        )
+
+    if text == BUTTON_ADD_NAME:
+        update.message.reply_text(text='Введите подпись с пометкой "подпись:"\n\n\tнапример: "Подпись: от твоей лучшей подруги"')
+
+    if text == BUTTON_ANONYMOUS_SEND:
+        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        wishlist_author_user_id = wishlist[0][0]
+        bot = context.bot
+        bot.send_message(
+            chat_id=wishlist_author_user_id,
+            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open('pic_lena_big_text.JPG', 'rb'),
+        )
+        update.message.reply_text(
+            text='''
+📤 <b>Ваша открытка отправлена автору вишлиста анонимно </b> 📤 \n
+Спасибо, что воспользовались ботом.
+Чтобы найти другой вишлист или создать свой нажмите /start''',
+            parse_mode=ParseMode.HTML
+        )
+
+    if (text.split(':')[0] == 'Подпись')|(text.split(':')[0] == 'подпись'):
+        from_whom = ' '.join(text.split(':')[1:])
+        context.user_data[FROM_WHOM] = from_whom
+        logger.info('user_data: %s', context.user_data)
+        keyboard = [[KeyboardButton(BUTTON_READY)]]
+        write_from(text=from_whom, pic_name='pic_lena_big_text.JPG', new_name='pic_lena_big_text.JPG')
+        context.bot.sendPhoto(
+            chat_id=update.message.chat.id,
+            photo=open('pic_lena_big_text.JPG', 'rb'),
+        )
+        update.message.reply_text(
+            text=f"Вот что получит автор вишлиста",
+            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        )
+
+    if text == BUTTON_READY:
+        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        wishlist_author_user_id = wishlist[0][0]
+        bot = context.bot
+        bot.send_message(
+            chat_id=wishlist_author_user_id,
+            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open('pic_lena_big_text.JPG', 'rb'),
+        )
+        update.message.reply_text(
+            text=f"📤 Ваша открытка отправлена автору вишлиста 📤 \n\n\n Спасибо, что воспользовались ботом.\n Чтобы найти другой вишлист или создать свой нажмите /start",
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML
+        )
+
+@debug_request
+def name_handler(update: Update, context: CallbackContext):
+    name = update.message.text
+    if len(name.split(' ')) > 1:
+        update.message.reply_text(
+            text='Пожалуйста введите название без пробелов.',
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        if wishlist_name_available(name=name):
+            context.user_data[NAME] = name
+            logger.info('user_data: %s', context.user_data)
+            update.message.reply_text(
+                text='Название сохранено✔️.\nВведите название первой благотворительной организации (максимум - 3)',
+                parse_mode=ParseMode.HTML,
+            )
+            return FOUNDATION_0
+        else:
+            update.message.reply_text(
+                text='К сожалению такое название уже занято, пожалуйста введите другое название.',
+                parse_mode=ParseMode.HTML,
+            )
+
+@debug_request
+def foundation_0_handler(update: Update, context: CallbackContext):
+    context.user_data[FOUNDATION_0] = update.message.text
+    logger.info('user_data: %s', context.user_data)
+    update.message.reply_text(
+        text='Введите методы оплаты для этой организации в свободном формате\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru',
+        parse_mode=ParseMode.HTML,
+    )
+    return METHOD_0
+
+@debug_request
+def method_0_handler(update: Update, context: CallbackContext):
+    context.user_data[METHOD_0] = update.message.text
+    context.user_data[N_FOUNDS] = 1
+    logger.info('user_data: %s', context.user_data)
+    update.message.reply_text(
+        text="Введите название второй благотворительной организации. Если одной достаточно нажмите /skip",
+        )
+    return FOUNDATION_1
+
+@debug_request
+def foundation_1_handler(update: Update, context: CallbackContext):
+    context.user_data[FOUNDATION_1] = update.message.text
+    logger.info('user_data: %s', context.user_data)
+    update.message.reply_text(
+        text='Введите методы оплаты для этой организации в свободном формате\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru',
+        parse_mode=ParseMode.HTML,
+    )
+    return METHOD_1
+
+@debug_request
+def method_1_handler(update: Update, context: CallbackContext):
+    context.user_data[METHOD_1] = update.message.text
+    context.user_data[N_FOUNDS] = 2
+    logger.info('user_data: %s', context.user_data)
+    update.message.reply_text(
+        text="Введите название третьей благотворительной организации. Если двух достаточно нажмите /skip",
+    )
+    return FOUNDATION_2
+
+@debug_request
+def foundation_2_handler(update: Update, context: CallbackContext):
+    context.user_data[FOUNDATION_2] = update.message.text
+    logger.info('user_data: %s', context.user_data)
+    update.message.reply_text(
+        text='Введите методы оплаты для этой организации в свободном формате\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru',
+        parse_mode=ParseMode.HTML,
+    )
+    return METHOD_2
+
+@debug_request
+def method_2_handler(update: Update, context: CallbackContext):
+    context.user_data[METHOD_2] = update.message.text
+    context.user_data[N_FOUNDS] = 3
+    name = context.user_data[NAME]
+    foundation0 = context.user_data[FOUNDATION_0]
+    method0 = context.user_data[METHOD_0]
+    foundation1 = context.user_data[FOUNDATION_1]
+    method1 = context.user_data[METHOD_1]
+    foundation2 = context.user_data[FOUNDATION_2]
+    method2 = context.user_data[METHOD_2]
+    keyboard = [[KeyboardButton(BUTTON_SAVE_WISHLIST)]]
+    logger.info('user_data: %s', context.user_data)
+    update.message.reply_text(
+        text=f'''
+Ввод оранизаций завершен
+Ваш вишлист выглядит вот так:\n
+⬜️<b>{name}</b>⬜️\n
+🔘️ {foundation0}
+Как пожертвовать: {method0}\n
+🔘️ {foundation1}
+Как пожертвовать: {method1}\n
+🔘️ {foundation2}
+Как пожертвовать: {method2}\n
+Если все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel
+''',
+        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+
+    return CONFIRM
+
+@debug_request
+def finish_creating_handler(update: Update, context: CallbackContext):
+    user = update.effective_user
+    name = context.user_data[NAME]
+    foundation0 = context.user_data[FOUNDATION_0]
+    method0 = context.user_data[METHOD_0]
+    n_founds = context.user_data[N_FOUNDS]
+    if n_founds == 1:
+        foundation1 = 'None'
+        method1 = 'None'
+        foundation2 = 'None'
+        method2 = 'None'
+    if n_founds == 2:
+        foundation1 = context.user_data[FOUNDATION_1]
+        method1 = context.user_data[METHOD_1]
+        foundation2 = 'None'
+        method2 = 'None'
+    if n_founds == 3:
+        foundation1 = context.user_data[FOUNDATION_1]
+        method1 = context.user_data[METHOD_1]
+        foundation2 = context.user_data[FOUNDATION_2]
+        method2 = context.user_data[METHOD_2]
+    if name:
+        if foundation0:
+            if method0:
+                add_message(
+                    user_id=user.id,
+                    name=name,
+                    foundation0=foundation0,
+                    method0=method0,
+                    foundation1=foundation1,
+                    method1=method1,
+                    foundation2=foundation2,
+                    method2=method2,
+                    n_founds=n_founds
+                )
+    update.message.reply_text(
+        text=f'Вишлист сохранен✔️.\nОтправьте вашим друзьям тег #{name}, и они смогут с помощью данного бота найти ваш вишлист и отправить вам открытку',
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode=ParseMode.HTML
+    )
+    logger.info('user_data: %s', context.user_data)
+    return ConversationHandler.END
+
+@debug_request
+def cancel_handler(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    logger.info("User %s canceled the conversation.", context.user_data)
+    update.message.reply_text(
+        text='Вы отменили создание вишлиста. Чтобы вернуться нажмите /start',
+        reply_markup=ReplyKeyboardRemove()
+    )
+    return ConversationHandler.END
+
+@debug_request
+def about(update: Update, context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
+        [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
+    ]
+    update.message.reply_text(
+        text='''
+*Подробнее о боте «Вместо открытки»:*
+
+Бот позволяет создать благотворительный вишлист: список организаций, в одну из которых ваши друзья могут сделать пожертвование в качестве подарка вам.
+Благотворительный вишлист в красивом оформлении можно скопировать в инстаграм и другие соцсети.
+Также бот может найти уже созданный вишлист и отправить поздравительную открытку автору вишлиста. Открытку можно отправить как анонимно так и с указанием имени отправителя.
+
+Бот не хранит никакую информацию об отправителях открыток. Когда вы взаимодейтвуете с чьим-то вишлистом ваше имя нигде не отображается. Иными словами, даже авторы бота не могут узнать кем отправлены анонимные открытки.
+
+Художник открытки [66hellena66](https://www.instagram.com/66hellena66/)
+Телеграм создателей бота - [@neverending_why](@neverending_why). Вы можете написать нам если увидели ошибку или хотите что-то улучшить в работе бота. Мы рады любым предложениям и замечаниям.🤍
+
+*Выберите режим:*
+''',
+        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+        parse_mode=ParseMode.MARKDOWN
+    )
+
+@debug_request
+def skip(update: Update, context: CallbackContext) -> int:
+    user = update.message.from_user
+    name = context.user_data[NAME]
+    n_founds = context.user_data[N_FOUNDS]
+    logger.info("User %s wants to skip other funds.", context.user_data)
+    keyboard = [[KeyboardButton(BUTTON_SAVE_WISHLIST)]]
+    foundation0 = context.user_data[FOUNDATION_0]
+    method0 = context.user_data[METHOD_0]
+    if n_founds == 1:
+        update.message.reply_text(
+            text=f'''
+Ввод оранизаций завершен
+Ваш вишлист выглядит вот так:\n
+⬜️<b>{name}</b>⬜️\n
+🔘️ {foundation0}
+Как пожертвовать: {method0}\n
+Если все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel
+''',
+        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
+    if n_founds == 2:
+        foundation1 = context.user_data[FOUNDATION_1]
+        method1 = context.user_data[METHOD_1]
+        update.message.reply_text(
+            text=f'''
+Ввод оранизаций завершен
+Ваш вишлист выглядит вот так:\n
+⬜️<b>{name}</b>⬜️\n
+🔘️ {foundation0}
+Как пожертвовать: {method0}\n
+️🔘️ {foundation1}
+Как пожертвовать: {method1}\n
+Если все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel
+''',
+            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True
+        )
+    if n_founds == 3:
+        update.message.reply_text('error')
+
+    return CONFIRM
+
+
+def main():
+    logger.info('Start bot')
+    req = Request(
+        connect_timeout=0.5,
+        read_timeout=1.0,
+    )
+    bot = Bot(
+        token=TG_TOKEN,
+        request=req,
+    )
+    updater = Updater(
+        bot=bot,
+        use_context=True,
+    )
+    info = bot.get_me()
+    logger.info(f'Bot info {info}')
+
+    init_db()
+
+    conv_create_handler = ConversationHandler(
+        entry_points=[
+            CallbackQueryHandler(do_create, pass_user_data=True),
+        ],
+        states={
+            NAME: [
+                MessageHandler(Filters.text, name_handler, pass_user_data=True),
+            ],
+            FOUNDATION_0: [
+                MessageHandler(Filters.text, foundation_0_handler, pass_user_data=True),
+            ],
+            METHOD_0: [
+                MessageHandler(Filters.text, method_0_handler, pass_user_data=True),
+            ],
+            FOUNDATION_1: [
+                MessageHandler(Filters.text, foundation_1_handler, pass_user_data=True),
+                CommandHandler('skip', skip),
+            ],
+            METHOD_1: [
+                MessageHandler(Filters.text, method_1_handler, pass_user_data=True),
+            ],
+            FOUNDATION_2: [
+                MessageHandler(Filters.text, foundation_2_handler, pass_user_data=True),
+                CommandHandler('skip', skip),
+            ],
+            METHOD_2: [
+                MessageHandler(Filters.text, method_2_handler, pass_user_data=True),
+            ],
+            CONFIRM: [
+                MessageHandler(Filters.text, finish_creating_handler, pass_user_data=True),
+            ]
+        },
+        fallbacks=[
+            CommandHandler('cancel', cancel_handler),
+        ],
+    )
+
+    updater.dispatcher.add_handler(conv_create_handler)
+    updater.dispatcher.add_handler(CommandHandler('start', start_buttons_handler))
+    updater.dispatcher.add_handler(CommandHandler('about', about))
+    updater.dispatcher.add_handler(MessageHandler(Filters.all, message_handler))
+
+    updater.start_polling()
+    updater.idle()
+    logger.info('Stop bot')
+
+if __name__ == '__main__':
+    main()
