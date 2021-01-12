@@ -5,9 +5,9 @@ from telegram.ext import CallbackContext, ConversationHandler
 from telegram.utils.request import Request
 from config import *
 from db import *
-from PIL import Image, ImageDraw, ImageFont
 from picture import write_wish, write_from
 import os
+from appearance_funtions import *
 
 logger = getLogger(__name__)
 
@@ -16,9 +16,11 @@ NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, F
 
 BUTTON1_FIND = "Найти вишлист 🔎"
 BUTTON2_MAKE = "Создать вишлист 📝"
+BUTTON3_SHOW = "Показать все мои вишлисты ⚙️"
 
 CALLBACK_BUTTON1_FIND = "callback_button_find"
 CALLBACK_BUTTON2_MAKE = "callback_button_make"
+CALLBACK_BUTTON3_SHOW = "callback_button_show"
 
 CALLBACK_BUTTON3_DONATE = "callback_button3_donate"
 
@@ -52,6 +54,7 @@ def start_buttons_handler(update: Update, context: CallbackContext):
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
         [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
+        [InlineKeyboardButton(BUTTON3_SHOW, callback_data=CALLBACK_BUTTON3_SHOW)],
     ]
     update.message.reply_text(
         text='''
@@ -77,6 +80,31 @@ def do_create(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove()
 
         )
+    if init == CALLBACK_BUTTON3_SHOW:
+        wishlists = show_my_wishlists(user_id=chat_id, limit=10)
+        if len(wishlists) == 0:
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Пока у вас нет вишлистов. Чтобы найти чей-то вишлист или создать ваш первый вишлист нажмите /start',
+                reply_markup=ReplyKeyboardRemove()
+
+            )
+        else:
+            for wishlist_i in wishlists:
+                update.callback_query.bot.send_message(
+                    chat_id=chat_id,
+                    text=print_wishlist_with_thanks(wishlist_i),
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True
+                )
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Чтобы найти другой вишлист или создать новый нажмите /start',
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=True,
+                reply_markup=ReplyKeyboardRemove()
+
+            )
     if init == CALLBACK_BUTTON2_MAKE:
         logger.debug(init)
         update.callback_query.bot.send_message(
@@ -95,36 +123,12 @@ def message_handler(update: Update, context: CallbackContext):
     if text[0] == '#':
         wishlistname = text[1:]
         wishlist = find_wishlist(name=wishlistname, limit=1)
-        n_founds = wishlist[0][10]
         if wishlist:
             context.user_data[FOUND_WISHLIST] = wishlistname
             keyboard = [[KeyboardButton(TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD])]]
-            if n_founds == 1:
-                reply_text = f'''
-⬜️#{wishlist[0][1]}⬜️\n
-<b>{wishlist[0][2]}</b>\n
-🔘️ {wishlist[0][3]}
-Как пожертвовать: {wishlist[0][4]}\n'''
-            if n_founds == 2:
-                reply_text = f'''
-⬜️#{wishlist[0][1]}⬜️\n
-<b>{wishlist[0][2]}</b>\n
-🔘️ {wishlist[0][3]}
-Как пожертвовать: {wishlist[0][4]}\n
-️🔘️{wishlist[0][5]}
-Как пожертвовать: {wishlist[0][6]}\n'''
-            if n_founds == 3:
-                reply_text = f'''
-⬜️#{wishlist[0][1]}⬜️\n
-<b>{wishlist[0][2]}</b>\n
-🔘️ {wishlist[0][3]}
-Как пожертвовать: {wishlist[0][4]}\n
-️🔘️{wishlist[0][5]}
-Как пожертвовать: {wishlist[0][6]}\n
-🔘️{wishlist[0][7]}
-Как пожертвовать: {wishlist[0][8]}\n'''
+            reply_text = print_wishlist(wishlist[0])
             update.message.reply_text(
-                text=f'Вишлист найден!✔️ \n\n\n {reply_text}  \n\n\n Теперь вы знаете что хочет получить автор вишлиста.\n Можете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                text=f'Вишлист найден!✔️\n\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
                 reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True
@@ -400,62 +404,23 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
     foundation0 = context.user_data[FOUNDATION_0]
     method0 = context.user_data[METHOD_0]
     if n_founds == 1:
-        update.message.reply_text(
-            text=f'''
-Ваш вишлист выглядит вот так:\n
-⬜️#{name}⬜️\n
-<b>{welcome_speech}</b>\n
-🔘️ {foundation0}
-Как пожертвовать: {method0}\n
-<i>Сообщение которое друзья увидят только после отправки открытки:</i>{thanks_speech}\n
-Если все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel
-''',
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True
-        )
+        reply_text = print_1_fund(name, welcome_speech, foundation0, method0, thanks_speech)
     if n_founds == 2:
         foundation1 = context.user_data[FOUNDATION_1]
         method1 = context.user_data[METHOD_1]
-        update.message.reply_text(
-            text=f'''
-Ваш вишлист выглядит вот так:\n
-⬜️#{name}⬜️\n
-<b>{welcome_speech}</b>\n
-🔘️ {foundation0}
-Как пожертвовать: {method0}\n
-🔘️ {foundation1}
-Как пожертвовать: {method1}\n
-<i>Сообщение которое друзья увидят только после отправки открытки:</i>{thanks_speech}\n
-Если все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel
-    ''',
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True
-        )
+        reply_text = print_2_funds(name, welcome_speech, foundation0, method0, foundation1, method1, thanks_speech)
     if n_founds == 3:
         foundation1 = context.user_data[FOUNDATION_1]
         method1 = context.user_data[METHOD_1]
         foundation2 = context.user_data[FOUNDATION_2]
         method2 = context.user_data[METHOD_2]
-        update.message.reply_text(
-            text=f'''
-Ваш вишлист выглядит вот так:\n
-⬜️#{name}⬜️\n
-<b>{welcome_speech}</b>\n
-🔘️ {foundation0}
-Как пожертвовать: {method0}\n
-🔘️ {foundation1}
-Как пожертвовать: {method1}\n
-🔘️ {foundation2}
-Как пожертвовать: {method2}\n
-<i>Сообщение которое друзья увидят только после отправки открытки:</i>{thanks_speech}\n
-Если все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel
-''',
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-            parse_mode=ParseMode.HTML,
-            disable_web_page_preview=True
-        )
+        reply_text = print_3_funds(name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech)
+    update.message.reply_text(
+        text=f"{reply_text}\nЕсли все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel",
+        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
 
     return CONFIRM
 

@@ -72,10 +72,16 @@ def wishlist_name_available(name: str):
     else:
         return False
 
+def show_my_wishlists(user_id: int, limit: int = 10):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE user_id = ? ORDER BY id DESC LIMIT ?', (user_id, limit))
+    return c.fetchall()
+
 if __name__ == '__main__':
-    init_db(True)
-    #init_db(False)
-    add_message(user_id=123, name='TestUser', welcome_speech='welcome_speech', foundation0='foundation0', method0='method0', foundation1='foundation1', method1='method1', foundation2='foundation2', method2='method2', thanks_speech='thanks_speech', n_founds=3)
+    #init_db(True)
+    init_db(False)
+    #add_message(user_id=97870197, name='ДеньРожденияВари13012020', welcome_speech='welcome_speech', foundation0='теплый дом', method0='вебсайт теплый-дом.рф', foundation1='foundation1', method1='method1', foundation2='foundation2', method2='method2', thanks_speech='thanks_speech', n_founds=1)
 
     r = count_messages(user_id=123)
     print(r)
@@ -84,3 +90,8 @@ if __name__ == '__main__':
     print(r)
 
     print('Un', wishlist_name_available('Un'))
+
+    r = show_my_wishlists(user_id=10, limit=10)
+    print(len(r))
+    for i in r:
+        print (i)
