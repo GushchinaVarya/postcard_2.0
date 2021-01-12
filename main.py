@@ -7,6 +7,7 @@ from config import *
 from db import *
 from PIL import Image, ImageDraw, ImageFont
 from picture import write_wish, write_from
+import os
 
 logger = getLogger(__name__)
 
@@ -151,10 +152,11 @@ def message_handler(update: Update, context: CallbackContext):
                     KeyboardButton(BUTTON_ADD_NAME),
                 ],
             ]
-            write_wish(text=wishtext, pic_name='pic_lena_big.JPG', new_name='pic_lena_big_text.JPG')
+            pic_name = str(update.message.chat.id)+'_'+PICTURE_NAME
+            write_wish(text=wishtext, pic_name=PICTURE_NAME, new_name=pic_name)
             context.bot.sendPhoto(
                 chat_id=update.message.chat.id,
-                photo=open('pic_lena_big_text.JPG', 'rb'),
+                photo=open(pic_name, 'rb'),
             )
             update.message.reply_text(
                 text=f"Предпросмотр открытки",
@@ -174,10 +176,11 @@ def message_handler(update: Update, context: CallbackContext):
                 KeyboardButton(BUTTON_NOSCREENSCHOT),
             ],
         ]
-        write_from(text=from_whom, pic_name='pic_lena_big_text.JPG', new_name='pic_lena_big_text.JPG')
+        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
+        write_from(text=from_whom, pic_name=pic_name, new_name=pic_name)
         context.bot.sendPhoto(
             chat_id=update.message.chat.id,
-            photo=open('pic_lena_big_text.JPG', 'rb'),
+            photo=open(pic_name, 'rb'),
         )
         update.message.reply_text(
             text=f"Предпросмотр открытки",
@@ -191,9 +194,10 @@ def message_handler(update: Update, context: CallbackContext):
                 KeyboardButton(BUTTON_NOSCREENSCHOT),
             ],
         ]
+        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
         context.bot.sendPhoto(
             chat_id=update.message.chat.id,
-            photo=open('pic_lena_big_text.JPG', 'rb'),
+            photo=open(pic_name, 'rb'),
         )
         update.message.reply_text(
             text=f"Предпросмотр открытки\n(Ваша открытка будет отправлена анонимно)",
@@ -205,13 +209,14 @@ def message_handler(update: Update, context: CallbackContext):
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
         bot = context.bot
+        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
         bot.send_message(
             chat_id=wishlist_author_user_id,
             text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
         )
         bot.sendPhoto(
             chat_id=wishlist_author_user_id,
-            photo=open('pic_lena_big_text.JPG', 'rb'),
+            photo=open(pic_name, 'rb'),
         )
         update.message.reply_text(
             text=f'''
@@ -222,6 +227,8 @@ def message_handler(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
+        os.system(f"(rm -rf {pic_name})")
+
     if text == BUTTON_SCREENSCHOT:
         update.message.reply_text('Пришлите скриншот перевода')
 
@@ -229,6 +236,7 @@ def message_handler(update: Update, context: CallbackContext):
         wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
+        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
         bot = context.bot
         bot.send_message(
             chat_id=wishlist_author_user_id,
@@ -236,7 +244,7 @@ def message_handler(update: Update, context: CallbackContext):
         )
         bot.sendPhoto(
             chat_id=wishlist_author_user_id,
-            photo=open('pic_lena_big_text.JPG', 'rb'),
+            photo=open(pic_name, 'rb'),
         )
         bot.sendPhoto(
             chat_id=wishlist_author_user_id,
@@ -251,6 +259,8 @@ def message_handler(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
+        os.system("(rm -rf screen_"+str(update.message.chat.id)+".png)")
+        os.system(f"(rm -rf {pic_name})")
 
 def photo_handler(update: Update, context: CallbackContext):
     user = update.message.from_user
