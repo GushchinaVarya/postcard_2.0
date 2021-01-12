@@ -34,12 +34,13 @@ def write_wish(text: str, pic_name: str, new_name: str):
     im.save(new_name)
 
 def write_from(text: str, pic_name: str, new_name: str):
+    prepared_text = prepare_text(text, 20)
     im = Image.open(pic_name)
     font = ImageFont.truetype('DejaVuSerif.ttf', size=50)
     draw_text = ImageDraw.Draw(im)
     draw_text.text(
         (1800, 1500),
-        text=text,
+        text=prepared_text,
         fill='black',
         font=font
         )

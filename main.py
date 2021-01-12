@@ -132,27 +132,32 @@ def message_handler(update: Update, context: CallbackContext):
                 reply_markup=ReplyKeyboardRemove()
             )
     if text == TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD]:
-        update.message.reply_text(text='Введите пожелание с пометкой "Пожелание:"\n\nнапример\nПожелание: счастья здоровья')
+        update.message.reply_text(text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание с пометкой "Пожелание:"\n\nнапример\nПожелание: счастья здоровья')
 
     if (text.split(':')[0] == 'Пожелание')|(text.split(':')[0] == 'пожелание'):
         wishtext = ' '.join(text.split(':')[1:])
-        context.user_data[WISH] = wishtext
-        logger.info('user_data: %s', context.user_data)
-        keyboard = [
-            [
-                KeyboardButton(BUTTON_ANONYMOUS_SEND),
-                KeyboardButton(BUTTON_ADD_NAME),
-            ],
-        ]
-        write_wish(text=wishtext, pic_name='pic_lena_big.JPG', new_name='pic_lena_big_text.JPG')
-        context.bot.sendPhoto(
-            chat_id=update.message.chat.id,
-            photo=open('pic_lena_big_text.JPG', 'rb'),
-        )
-        update.message.reply_text(
-            text=f"Вот что получит автор вишлиста",
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-        )
+        if len(wishtext) > WISH_LIMIT:
+            update.message.reply_text(
+                text="Слишком длинное пожелание"
+            )
+        else:
+            context.user_data[WISH] = wishtext
+            logger.info('user_data: %s', context.user_data)
+            keyboard = [
+                [
+                    KeyboardButton(BUTTON_ANONYMOUS_SEND),
+                    KeyboardButton(BUTTON_ADD_NAME),
+                ],
+            ]
+            write_wish(text=wishtext, pic_name='pic_lena_big.JPG', new_name='pic_lena_big_text.JPG')
+            context.bot.sendPhoto(
+                chat_id=update.message.chat.id,
+                photo=open('pic_lena_big_text.JPG', 'rb'),
+            )
+            update.message.reply_text(
+                text=f"Вот что получит автор вишлиста",
+                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+            )
 
     if text == BUTTON_ADD_NAME:
         update.message.reply_text(text='Введите подпись с пометкой "Подпись:"\n\nнапример:\nПодпись: от твоей лучшей подруги')
