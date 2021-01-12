@@ -22,6 +22,8 @@ def prepare_text(text: str, max_width:int):
 
 def write_wish(text: str, pic_name: str, new_name: str):
     prepared_text = prepare_text(text, 28)
+    if prepared_text[0] == ' ':
+        prepared_text = prepared_text[1:]
     im = Image.open(pic_name)
     font = ImageFont.truetype('DejaVuSerif.ttf', size=80)
     draw_text = ImageDraw.Draw(im)
@@ -35,6 +37,8 @@ def write_wish(text: str, pic_name: str, new_name: str):
 
 def write_from(text: str, pic_name: str, new_name: str):
     prepared_text = prepare_text(text, 20)
+    if prepared_text[0] == ' ':
+        prepared_text = prepared_text[1:]
     im = Image.open(pic_name)
     font = ImageFont.truetype('DejaVuSerif.ttf', size=50)
     draw_text = ImageDraw.Draw(im)

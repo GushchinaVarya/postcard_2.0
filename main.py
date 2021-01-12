@@ -31,6 +31,8 @@ BUTTON_ANONYMOUS_SEND = "Отправить анонимно"
 BUTTON_ADD_NAME = "Подписать открытку"
 BUTTON_READY = "Готово! Отправить автору вишлиста!"
 BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
+BUTTON_SCREENSCHOT = "Добавить скриншот перевода"
+BUTTON_NOSCREENSCHOT = "Отправить без скриншота перевода"
 
 
 def debug_request(f):
@@ -155,52 +157,50 @@ def message_handler(update: Update, context: CallbackContext):
                 photo=open('pic_lena_big_text.JPG', 'rb'),
             )
             update.message.reply_text(
-                text=f"Вот что получит автор вишлиста",
+                text=f"Предпросмотр открытки",
                 reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
 
     if text == BUTTON_ADD_NAME:
         update.message.reply_text(text='Введите подпись с пометкой "Подпись:"\n\nнапример:\nПодпись: от твоей лучшей подруги')
 
-    if text == BUTTON_ANONYMOUS_SEND:
-        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
-        wishlist_author_user_id = wishlist[0][0]
-        wishlist_thanks_message = wishlist[0][9]
-        bot = context.bot
-        bot.send_message(
-            chat_id=wishlist_author_user_id,
-            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open('pic_lena_big_text.JPG', 'rb'),
-        )
-        update.message.reply_text(
-            text=f'''
-📤 Ваша открытка отправлена автору вишлиста анонимно 📤 \n\n
-Сообщение от автора вишлиста:<b>{wishlist_thanks_message}</b>\n
-Спасибо, что воспользовались ботом.
-Чтобы найти другой вишлист или создать свой нажмите /start''',
-            reply_markup=ReplyKeyboardRemove(),
-            parse_mode=ParseMode.HTML
-        )
-
     if (text.split(':')[0] == 'Подпись')|(text.split(':')[0] == 'подпись'):
         from_whom = ' '.join(text.split(':')[1:])
         context.user_data[FROM_WHOM] = from_whom
         logger.info('user_data: %s', context.user_data)
-        keyboard = [[KeyboardButton(BUTTON_READY)]]
+        keyboard = [
+            [
+                KeyboardButton(BUTTON_SCREENSCHOT),
+                KeyboardButton(BUTTON_NOSCREENSCHOT),
+            ],
+        ]
         write_from(text=from_whom, pic_name='pic_lena_big_text.JPG', new_name='pic_lena_big_text.JPG')
         context.bot.sendPhoto(
             chat_id=update.message.chat.id,
             photo=open('pic_lena_big_text.JPG', 'rb'),
         )
         update.message.reply_text(
-            text=f"Вот что получит автор вишлиста",
+            text=f"Предпросмотр открытки",
             reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
         )
 
-    if text == BUTTON_READY:
+    if text == BUTTON_ANONYMOUS_SEND:
+        keyboard = [
+            [
+                KeyboardButton(BUTTON_SCREENSCHOT),
+                KeyboardButton(BUTTON_NOSCREENSCHOT),
+            ],
+        ]
+        context.bot.sendPhoto(
+            chat_id=update.message.chat.id,
+            photo=open('pic_lena_big_text.JPG', 'rb'),
+        )
+        update.message.reply_text(
+            text=f"Предпросмотр открытки\n(Ваша открытка будет отправлена анонимно)",
+            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        )
+
+    if text == BUTTON_NOSCREENSCHOT:
         wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
@@ -216,12 +216,53 @@ def message_handler(update: Update, context: CallbackContext):
         update.message.reply_text(
             text=f'''
 📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
-Сообщение от автора вишлиста:<b>{wishlist_thanks_message}</b>\n
+Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
 Спасибо, что воспользовались ботом.
 Чтобы найти другой вишлист или создать свой нажмите /start''',
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
+    if text == BUTTON_SCREENSCHOT:
+        update.message.reply_text('Пришлите скриншот перевода')
+
+    if text == BUTTON_READY:
+        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        wishlist_author_user_id = wishlist[0][0]
+        wishlist_thanks_message = wishlist[0][9]
+        bot = context.bot
+        bot.send_message(
+            chat_id=wishlist_author_user_id,
+            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open('pic_lena_big_text.JPG', 'rb'),
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open('screen_'+str(update.message.chat.id)+'.png', 'rb'),
+        )
+        update.message.reply_text(
+            text=f'''
+📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
+Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
+Спасибо, что воспользовались ботом.
+Чтобы найти другой вишлист или создать свой нажмите /start''',
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML
+        )
+
+def photo_handler(update: Update, context: CallbackContext):
+    user = update.message.from_user
+    name_screenshot = 'screen_'+str(update.message.chat.id)+'.png'
+    photo_file = update.message.photo[-1].get_file()
+    photo_file.download(name_screenshot)
+    logger.info("Photo of %s", name_screenshot)
+    keyboard = [[KeyboardButton(BUTTON_READY)]]
+    update.message.reply_text(
+        text='Скриншот добавлен',
+        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+    )
 
 @debug_request
 def name_handler(update: Update, context: CallbackContext):
@@ -556,7 +597,8 @@ def main():
     updater.dispatcher.add_handler(conv_create_handler)
     updater.dispatcher.add_handler(CommandHandler('start', start_buttons_handler))
     updater.dispatcher.add_handler(CommandHandler('about', about))
-    updater.dispatcher.add_handler(MessageHandler(Filters.all, message_handler))
+    updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
+    updater.dispatcher.add_handler(MessageHandler(Filters.photo, photo_handler))
 
     updater.start_polling()
     updater.idle()
