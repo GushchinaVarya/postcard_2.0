@@ -11,7 +11,7 @@ from appearance_funtions import *
 
 logger = getLogger(__name__)
 
-NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST = range(14)
+NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE = range(16)
 
 
 BUTTON1_FIND = "Найти вишлист 🔎"
@@ -138,10 +138,11 @@ def message_handler(update: Update, context: CallbackContext):
                 text='Вишлист c таким именем не найден. Введите другой вишлист.',
                 reply_markup=ReplyKeyboardRemove()
             )
-    if text == TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD]:
+    elif text == TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD]:
+        context.user_data[WISH_MODE] = 'True'
         update.message.reply_text(text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание с пометкой "Пожелание:"\n\nнапример\nПожелание: счастья здоровья')
 
-    if (text.split(':')[0] == 'Пожелание')|(text.split(':')[0] == 'пожелание'):
+    elif (text.split(':')[0] == 'Пожелание')|(text.split(':')[0] == 'пожелание'):
         wishtext = ' '.join(text.split(':')[1:])
         if len(wishtext) > WISH_LIMIT:
             update.message.reply_text(
@@ -167,10 +168,12 @@ def message_handler(update: Update, context: CallbackContext):
                 reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
 
-    if text == BUTTON_ADD_NAME:
+    elif text == BUTTON_ADD_NAME:
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'True'
         update.message.reply_text(text='Введите подпись с пометкой "Подпись:"\n\nнапример:\nПодпись: от твоей лучшей подруги')
 
-    if (text.split(':')[0] == 'Подпись')|(text.split(':')[0] == 'подпись'):
+    elif (text.split(':')[0] == 'Подпись')|(text.split(':')[0] == 'подпись'):
         from_whom = ' '.join(text.split(':')[1:])
         context.user_data[FROM_WHOM] = from_whom
         logger.info('user_data: %s', context.user_data)
@@ -191,7 +194,9 @@ def message_handler(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
         )
 
-    if text == BUTTON_ANONYMOUS_SEND:
+    elif text == BUTTON_ANONYMOUS_SEND:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
         keyboard = [
             [
                 KeyboardButton(BUTTON_SCREENSCHOT),
@@ -208,7 +213,7 @@ def message_handler(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
         )
 
-    if text == BUTTON_NOSCREENSCHOT:
+    elif text == BUTTON_NOSCREENSCHOT:
         wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
@@ -233,10 +238,14 @@ def message_handler(update: Update, context: CallbackContext):
         )
         os.system(f"(rm -rf {pic_name})")
 
-    if text == BUTTON_SCREENSCHOT:
+    elif text == BUTTON_SCREENSCHOT:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
         update.message.reply_text('Пришлите скриншот перевода')
 
-    if text == BUTTON_READY:
+    elif text == BUTTON_READY:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
         wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
@@ -265,6 +274,55 @@ def message_handler(update: Update, context: CallbackContext):
         )
         os.system("(rm -rf screen_"+str(update.message.chat.id)+".png)")
         os.system(f"(rm -rf {pic_name})")
+
+    else:
+        if context.user_data[WISH_MODE] == 'True':
+            wishtext = text
+            if len(wishtext) > WISH_LIMIT:
+                update.message.reply_text(
+                    text="Слишком длинное пожелание"
+                )
+            else:
+                context.user_data[WISH] = wishtext
+                logger.info('user_data: %s', context.user_data)
+                keyboard = [
+                    [
+                        KeyboardButton(BUTTON_ANONYMOUS_SEND),
+                        KeyboardButton(BUTTON_ADD_NAME),
+                    ],
+                ]
+                pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
+                write_wish(text=wishtext, pic_name=PICTURE_NAME, new_name=pic_name)
+                context.bot.sendPhoto(
+                    chat_id=update.message.chat.id,
+                    photo=open(pic_name, 'rb'),
+                )
+                update.message.reply_text(
+                    text=f"Предпросмотр открытки",
+                    reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+                )
+        elif context.user_data[FROM_MODE] == 'True':
+            from_whom = text
+            context.user_data[FROM_WHOM] = from_whom
+            logger.info('user_data: %s', context.user_data)
+            keyboard = [
+                [
+                    KeyboardButton(BUTTON_SCREENSCHOT),
+                    KeyboardButton(BUTTON_NOSCREENSCHOT),
+                ],
+            ]
+            pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
+            write_from(text=from_whom, pic_name=pic_name, new_name=pic_name)
+            context.bot.sendPhoto(
+                chat_id=update.message.chat.id,
+                photo=open(pic_name, 'rb'),
+            )
+            update.message.reply_text(
+                text=f"Предпросмотр открытки",
+                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+            )
+        else:
+            update.message.reply_text('Неверный формат ввода')
 
 def photo_handler(update: Update, context: CallbackContext):
     user = update.message.from_user
