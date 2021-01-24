@@ -548,7 +548,8 @@ def about(update: Update, context: CallbackContext):
 *Выберите режим:*
 ''',
         reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-        parse_mode=ParseMode.MARKDOWN
+        parse_mode=ParseMode.MARKDOWN,
+        disable_web_page_preview=True
     )
 
 
