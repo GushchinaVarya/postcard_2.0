@@ -26,6 +26,7 @@ def init_db(conn, force: bool = False):
         id              INTEGER PRIMARY KEY,
         user_id         INTEGER NOT NULL,
         name            TEXT NOT NULL,
+        namelowreg      TEXT NOT NULL,
         welcome_speech  TEXT NOT NULL,
         foundation0     TEXT NOT NULL,
         method0         TEXT NOT NULL,
@@ -41,9 +42,9 @@ def init_db(conn, force: bool = False):
     conn.commit()
 
 @ensure_connection
-def add_message(conn, user_id: int, name: str, welcome_speech:str, foundation0:str, method0:str, foundation1:str, method1:str, foundation2:str, method2:str, thanks_speech:str, n_founds:int):
+def add_message(conn, user_id: int, name: str, namelowreg: str, welcome_speech: str, foundation0: str, method0: str, foundation1: str, method1: str, foundation2: str, method2: str, thanks_speech: str, n_founds: int):
     c = conn.cursor()
-    c.execute('INSERT INTO user_wishlist (user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds))
+    c.execute('INSERT INTO user_wishlist (user_id, name, namelowreg, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (user_id, name, namelowreg, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds))
     conn.commit()
 
 @ensure_connection
@@ -54,15 +55,15 @@ def count_messages(conn, user_id: int):
     return res
 
 @ensure_connection
-def find_wishlist(conn, name: int, limit: int = 10):
+def find_wishlist(conn, namelowreg: str, limit: int = 10):
     c = conn.cursor()
-    c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE name = ? ORDER BY id DESC LIMIT ?', (name, limit))
+    c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE namelowreg = ? ORDER BY id DESC LIMIT ?', (namelowreg, limit))
     return c.fetchall()
 
 @ensure_connection
-def wishlist_name_available(conn, name: str):
+def wishlist_name_available(conn, namelowreg: str):
     c = conn.cursor()
-    c.execute('SELECT COUNT(*) FROM user_wishlist WHERE name = ?', (name,))
+    c.execute('SELECT COUNT(*) FROM user_wishlist WHERE namelowreg = ?', (namelowreg,))
     (res,) = c.fetchone()
     if res == 0:
         return True

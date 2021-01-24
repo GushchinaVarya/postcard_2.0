@@ -235,7 +235,7 @@ def message_handler(update: Update, context: CallbackContext):
     text = update.message.text
     if text[0] == '#':
         wishlistname = text[1:]
-        wishlist = find_wishlist(name=wishlistname, limit=1)
+        wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
         if wishlist:
             context.user_data[FOUND_WISHLIST] = wishlistname
             keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
@@ -318,7 +318,7 @@ def name_handler(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML,
         )
     else:
-        if wishlist_name_available(name=name):
+        if wishlist_name_available(namelowreg=name.lower()):
             context.user_data[NAME] = name
             logger.info('user_data: %s', context.user_data)
             update.message.reply_text(
@@ -485,6 +485,7 @@ def finish_creating_handler(update: Update, context: CallbackContext):
                 add_message(
                     user_id=user.id,
                     name=name,
+                    namelowreg=name.lower(),
                     welcome_speech=welcome_speech,
                     foundation0=foundation0,
                     method0=method0,

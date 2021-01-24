@@ -27,6 +27,7 @@ def init_db(force: bool = False):
         id              INTEGER PRIMARY KEY,
         user_id         INTEGER NOT NULL,
         name            TEXT NOT NULL,
+        namelowreg      TEXT NOT NULL,
         welcome_speech  TEXT NOT NULL,
         foundation0     TEXT NOT NULL,
         method0         TEXT NOT NULL,
@@ -42,10 +43,10 @@ def init_db(force: bool = False):
     conn.commit()
 
 #@ensure_connection
-def add_message(user_id: int, name: str, welcome_speech:str, foundation0:str, method0:str, foundation1:str, method1:str, foundation2:str, method2:str, thanks_speech:str, n_founds:int):
+def add_message(user_id: int, name: str, namelowreg: str, welcome_speech:str, foundation0:str, method0:str, foundation1:str, method1:str, foundation2:str, method2:str, thanks_speech:str, n_founds:int):
     conn = get_connection()
     c = conn.cursor()
-    c.execute('INSERT INTO user_wishlist (user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds))
+    c.execute('INSERT INTO user_wishlist (user_id, name, namelowreg, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', (user_id, name, namelowreg, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds))
     conn.commit()
 
 #@ensure_connection
@@ -56,16 +57,16 @@ def count_messages(user_id: int):
     (res,) = c.fetchone()
     return res
 
-def find_wishlist(name: str, limit: int = 1):
+def find_wishlist(namelowreg: str, limit: int = 1):
     conn = get_connection()
     c = conn.cursor()
-    c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE name = ? ORDER BY id DESC LIMIT ?', (name, limit))
+    c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE namelowreg = ? ORDER BY id DESC LIMIT ?', (namelowreg, limit))
     return c.fetchall()
 
-def wishlist_name_available(name: str):
+def wishlist_name_available(namelowreg: str):
     conn = get_connection()
     c = conn.cursor()
-    c.execute('SELECT COUNT(*) FROM user_wishlist WHERE name = ?', (name,))
+    c.execute('SELECT COUNT(*) FROM user_wishlist WHERE namelowreg = ?', (namelowreg,))
     (res,) = c.fetchone()
     if res == 0:
         return True
@@ -81,17 +82,30 @@ def show_my_wishlists(user_id: int, limit: int = 10):
 if __name__ == '__main__':
     #init_db(True)
     init_db(False)
-    #add_message(user_id=97870197, name='ДеньРожденияВари13012020', welcome_speech='welcome_speech', foundation0='теплый дом', method0='вебсайт теплый-дом.рф', foundation1='foundation1', method1='method1', foundation2='foundation2', method2='method2', thanks_speech='thanks_speech', n_founds=1)
+    add_message(user_id=123274089,
+                name='ДеньРожденияИванаИванова01Янв2021',
+                namelowreg='деньрожденияиванаиванова01янв2021',
+                welcome_speech='Привет! Это Иван Иванов. Буду рад если вы пожертвуете в один из следующих фондов, для меня их деятельность очень важна.',
+                foundation0='Фонд WWF',
+                method0='вебсайт https://www.worldwildlife.org',
+                foundation1='Фонд "Нужна помощь" ',
+                method1='https://nuzhnapomosh.ru/donate/',
+                foundation2='foundation2',
+                method2='method2',
+                thanks_speech='Спасибо вам за пожертвование. Вы классные. Ваш Иван Иванов🤍',
+                n_founds=2)
 
-    r = count_messages(user_id=123)
+
+    r = count_messages(user_id=123274089)
     print(r)
 
-    r = find_wishlist(name='TestUser', limit=1)
+    r = find_wishlist(namelowreg='деньрождениявари13012020', limit=1)
     print(r)
 
-    print('Un', wishlist_name_available('Un'))
+    print('ДеньРожденияИванаИванова01Янв2021', wishlist_name_available('деньрожденияиванаиванова01янв2021'))
+    print('деньрож20', wishlist_name_available('деньрож20'))
 
-    r = show_my_wishlists(user_id=10, limit=10)
+    r = show_my_wishlists(user_id=123274089, limit=10)
     print(len(r))
     for i in r:
-        print (i)
+        print(i)
