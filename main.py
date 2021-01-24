@@ -75,6 +75,8 @@ def do_create(update: Update, context: CallbackContext):
     init = update.callback_query.data
     chat_id = update.callback_query.message.chat.id
     if init == CALLBACK_BUTTON1_FIND:
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'False'
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='Введите название вишлиста используя знак #\n\nпример #ДеньРожденияИванаИванова01Янв2021',
@@ -83,6 +85,8 @@ def do_create(update: Update, context: CallbackContext):
         )
 
     if init == CALLBACK_BUTTON3_SHOW:
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'False'
         wishlists = show_my_wishlists(user_id=chat_id, limit=10)
         if len(wishlists) == 0:
             update.callback_query.bot.send_message(
@@ -108,6 +112,8 @@ def do_create(update: Update, context: CallbackContext):
 
             )
     if init == CALLBACK_BUTTON2_MAKE:
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'False'
         logger.debug(init)
         update.callback_query.bot.send_message(
             chat_id=chat_id,
@@ -164,7 +170,9 @@ def do_create(update: Update, context: CallbackContext):
         )
 
     elif init == CALLBACK_BUTTON8_NO_SCREENSHOT:
-        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'False'
+        wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
         bot = update.callback_query.bot
@@ -196,7 +204,7 @@ def do_create(update: Update, context: CallbackContext):
     elif init == CALLBACK_BUTTON9_READY:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
-        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
         if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAME):
@@ -299,6 +307,8 @@ def message_handler(update: Update, context: CallbackContext):
             update.message.reply_text('Неверный формат ввода')
 
 def photo_handler(update: Update, context: CallbackContext):
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
     name_screenshot = 'screen_'+str(update.message.chat.id)+'.png'
     photo_file = update.message.photo[-1].get_file()
     photo_file.download(name_screenshot)
@@ -311,6 +321,8 @@ def photo_handler(update: Update, context: CallbackContext):
 
 @debug_request
 def name_handler(update: Update, context: CallbackContext):
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
     name = update.message.text
     if len(name.split(' ')) > 1:
         update.message.reply_text(
