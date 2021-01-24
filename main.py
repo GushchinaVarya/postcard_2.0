@@ -17,25 +17,24 @@ NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, F
 BUTTON1_FIND = "Найти вишлист 🔎"
 BUTTON2_MAKE = "Создать вишлист 📝"
 BUTTON3_SHOW = "Показать все мои вишлисты ⚙️"
+BUTTON4_GENERATE_POSTCARD = "Сгенерировать открытку"
+BUTTON5_ANONYMOUS_SEND = "Отправить анонимно"
+BUTTON6_ADD_NAME = "Подписать открытку"
+BUTTON7_ADD_SCREENSHOT = "Добавить скриншот перевода"
+BUTTON8_NO_SCREENSHOT = "Отправить без скриншота"
+BUTTON9_READY = "Готово! Отправить автору вишлиста!"
 
 CALLBACK_BUTTON1_FIND = "callback_button_find"
 CALLBACK_BUTTON2_MAKE = "callback_button_make"
 CALLBACK_BUTTON3_SHOW = "callback_button_show"
+CALLBACK_BUTTON4_GENERATE_POSTCARD = "callback_button_generate_postcard"
+CALLBACK_BUTTON5_ANONYMOUS_SEND = "callback_button_anonymous_send"
+CALLBACK_BUTTON6_ADD_NAME = "callback_button_add_name"
+CALLBACK_BUTTON7_ADD_SCREENSHOT = "callback_button_add_screenshot"
+CALLBACK_BUTTON8_NO_SCREENSHOT = "callback_button_no_screenshot"
+CALLBACK_BUTTON9_READY = "callback_button_ready"
 
-CALLBACK_BUTTON3_DONATE = "callback_button3_donate"
-
-CALLBACK_BUTTON_GENERATE_POSTCARD = "callback_button_generate_postcard"
-CALLBACK_BUTTON_CREATE_WISHLIST = "callback_button_create_wishlist"
-TITLES = {
-    CALLBACK_BUTTON_GENERATE_POSTCARD: "Сгенерировать открытку",
-    CALLBACK_BUTTON_CREATE_WISHLIST: "Продолжить",
-}
-BUTTON_ANONYMOUS_SEND = "Отправить анонимно"
-BUTTON_ADD_NAME = "Подписать открытку"
-BUTTON_READY = "Готово! Отправить автору вишлиста!"
 BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
-BUTTON_SCREENSCHOT = "Добавить скриншот перевода"
-BUTTON_NOSCREENSCHOT = "Отправить без скриншота перевода"
 
 
 def debug_request(f):
@@ -51,6 +50,8 @@ def debug_request(f):
 
 @debug_request
 def start_buttons_handler(update: Update, context: CallbackContext):
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
         [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
@@ -80,6 +81,7 @@ def do_create(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove()
 
         )
+
     if init == CALLBACK_BUTTON3_SHOW:
         wishlists = show_my_wishlists(user_id=chat_id, limit=10)
         if len(wishlists) == 0:
@@ -117,6 +119,117 @@ def do_create(update: Update, context: CallbackContext):
         )
         return NAME
 
+    if init == CALLBACK_BUTTON4_GENERATE_POSTCARD:
+        context.user_data[WISH_MODE] = 'True'
+        context.user_data[FROM_MODE] = 'False'
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+            parse_mode=ParseMode.HTML
+        )
+
+    if init == CALLBACK_BUTTON6_ADD_NAME:
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'True'
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text='Введите подпись\nнапример: Oт твоей лучшей подруги',
+            parse_mode=ParseMode.HTML
+        )
+
+    elif init == CALLBACK_BUTTON5_ANONYMOUS_SEND:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
+        keyboard = [
+            [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
+            [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
+        ]
+        pic_name = 'wish_' + str(chat_id) + '_' +PICTURE_NAME
+        update.callback_query.bot.sendPhoto(
+            chat_id=chat_id,
+            photo=open(pic_name, 'rb'),
+        )
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f"Предпросмотр открытки ⬆️ \n(Ваша открытка будет отправлена анонимно)",
+            reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+        )
+
+    elif init == CALLBACK_BUTTON7_ADD_SCREENSHOT:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text='Пришлите скриншот перевода'
+        )
+
+    elif init == CALLBACK_BUTTON8_NO_SCREENSHOT:
+        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        wishlist_author_user_id = wishlist[0][0]
+        wishlist_thanks_message = wishlist[0][9]
+        bot = update.callback_query.bot
+        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAME):
+            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAME
+        else:
+            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAME
+        bot.send_message(
+            chat_id=wishlist_author_user_id,
+            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open(pic_name, 'rb'),
+        )
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f'''
+📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
+Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
+Спасибо, что воспользовались ботом.
+Чтобы найти другой вишлист или создать свой нажмите /start''',
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML
+        )
+        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAME})")
+        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAME})")
+
+    elif init == CALLBACK_BUTTON9_READY:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
+        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
+        wishlist_author_user_id = wishlist[0][0]
+        wishlist_thanks_message = wishlist[0][9]
+        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAME):
+            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAME
+        else:
+            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAME
+        bot = update.callback_query.bot
+        bot.send_message(
+            chat_id=wishlist_author_user_id,
+            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open(pic_name, 'rb'),
+        )
+        bot.sendPhoto(
+            chat_id=wishlist_author_user_id,
+            photo=open('screen_' + str(chat_id) + '.png', 'rb'),
+        )
+        bot.send_message(
+            chat_id=chat_id,
+            text=f'''
+📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
+Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
+Спасибо, что воспользовались ботом.
+Чтобы найти другой вишлист или создать свой нажмите /start''',
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML
+        )
+        os.system("(rm -rf screen_" + str(chat_id) + ".png)")
+        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAME})")
+        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAME})")
+
 @debug_request
 def message_handler(update: Update, context: CallbackContext):
     text = update.message.text
@@ -125,11 +238,11 @@ def message_handler(update: Update, context: CallbackContext):
         wishlist = find_wishlist(name=wishlistname, limit=1)
         if wishlist:
             context.user_data[FOUND_WISHLIST] = wishlistname
-            keyboard = [[KeyboardButton(TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD])]]
+            keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
             reply_text = print_wishlist(wishlist[0])
             update.message.reply_text(
                 text=f'Вишлист найден!✔️\n\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
-                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True
             )
@@ -138,142 +251,6 @@ def message_handler(update: Update, context: CallbackContext):
                 text='Вишлист c таким именем не найден. Введите другой вишлист.',
                 reply_markup=ReplyKeyboardRemove()
             )
-    elif text == TITLES[CALLBACK_BUTTON_GENERATE_POSTCARD]:
-        context.user_data[WISH_MODE] = 'True'
-        update.message.reply_text(text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание с пометкой "Пожелание:"\n\nнапример\nПожелание: счастья здоровья')
-
-    elif (text.split(':')[0] == 'Пожелание')|(text.split(':')[0] == 'пожелание'):
-        wishtext = ' '.join(text.split(':')[1:])
-        if len(wishtext) > WISH_LIMIT:
-            update.message.reply_text(
-                text="Слишком длинное пожелание"
-            )
-        else:
-            context.user_data[WISH] = wishtext
-            logger.info('user_data: %s', context.user_data)
-            keyboard = [
-                [
-                    KeyboardButton(BUTTON_ANONYMOUS_SEND),
-                    KeyboardButton(BUTTON_ADD_NAME),
-                ],
-            ]
-            pic_name = str(update.message.chat.id)+'_'+PICTURE_NAME
-            write_wish(text=wishtext, pic_name=PICTURE_NAME, new_name=pic_name)
-            context.bot.sendPhoto(
-                chat_id=update.message.chat.id,
-                photo=open(pic_name, 'rb'),
-            )
-            update.message.reply_text(
-                text=f"Предпросмотр открытки",
-                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-            )
-
-    elif text == BUTTON_ADD_NAME:
-        context.user_data[WISH_MODE] = 'False'
-        context.user_data[FROM_MODE] = 'True'
-        update.message.reply_text(text='Введите подпись с пометкой "Подпись:"\n\nнапример:\nПодпись: от твоей лучшей подруги')
-
-    elif (text.split(':')[0] == 'Подпись')|(text.split(':')[0] == 'подпись'):
-        from_whom = ' '.join(text.split(':')[1:])
-        context.user_data[FROM_WHOM] = from_whom
-        logger.info('user_data: %s', context.user_data)
-        keyboard = [
-            [
-                KeyboardButton(BUTTON_SCREENSCHOT),
-                KeyboardButton(BUTTON_NOSCREENSCHOT),
-            ],
-        ]
-        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
-        write_from(text=from_whom, pic_name=pic_name, new_name=pic_name)
-        context.bot.sendPhoto(
-            chat_id=update.message.chat.id,
-            photo=open(pic_name, 'rb'),
-        )
-        update.message.reply_text(
-            text=f"Предпросмотр открытки",
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-        )
-
-    elif text == BUTTON_ANONYMOUS_SEND:
-        context.user_data[FROM_MODE] = 'False'
-        context.user_data[WISH_MODE] = 'False'
-        keyboard = [
-            [
-                KeyboardButton(BUTTON_SCREENSCHOT),
-                KeyboardButton(BUTTON_NOSCREENSCHOT),
-            ],
-        ]
-        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
-        context.bot.sendPhoto(
-            chat_id=update.message.chat.id,
-            photo=open(pic_name, 'rb'),
-        )
-        update.message.reply_text(
-            text=f"Предпросмотр открытки\n(Ваша открытка будет отправлена анонимно)",
-            reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
-        )
-
-    elif text == BUTTON_NOSCREENSCHOT:
-        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
-        wishlist_author_user_id = wishlist[0][0]
-        wishlist_thanks_message = wishlist[0][9]
-        bot = context.bot
-        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
-        bot.send_message(
-            chat_id=wishlist_author_user_id,
-            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open(pic_name, 'rb'),
-        )
-        update.message.reply_text(
-            text=f'''
-📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
-Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
-Спасибо, что воспользовались ботом.
-Чтобы найти другой вишлист или создать свой нажмите /start''',
-            reply_markup=ReplyKeyboardRemove(),
-            parse_mode=ParseMode.HTML
-        )
-        os.system(f"(rm -rf {pic_name})")
-
-    elif text == BUTTON_SCREENSCHOT:
-        context.user_data[FROM_MODE] = 'False'
-        context.user_data[WISH_MODE] = 'False'
-        update.message.reply_text('Пришлите скриншот перевода')
-
-    elif text == BUTTON_READY:
-        context.user_data[FROM_MODE] = 'False'
-        context.user_data[WISH_MODE] = 'False'
-        wishlist = find_wishlist(name=context.user_data[FOUND_WISHLIST], limit=1)
-        wishlist_author_user_id = wishlist[0][0]
-        wishlist_thanks_message = wishlist[0][9]
-        pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
-        bot = context.bot
-        bot.send_message(
-            chat_id=wishlist_author_user_id,
-            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open(pic_name, 'rb'),
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open('screen_'+str(update.message.chat.id)+'.png', 'rb'),
-        )
-        update.message.reply_text(
-            text=f'''
-📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
-Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
-Спасибо, что воспользовались ботом.
-Чтобы найти другой вишлист или создать свой нажмите /start''',
-            reply_markup=ReplyKeyboardRemove(),
-            parse_mode=ParseMode.HTML
-        )
-        os.system("(rm -rf screen_"+str(update.message.chat.id)+".png)")
-        os.system(f"(rm -rf {pic_name})")
 
     else:
         if context.user_data[WISH_MODE] == 'True':
@@ -286,54 +263,50 @@ def message_handler(update: Update, context: CallbackContext):
                 context.user_data[WISH] = wishtext
                 logger.info('user_data: %s', context.user_data)
                 keyboard = [
-                    [
-                        KeyboardButton(BUTTON_ANONYMOUS_SEND),
-                        KeyboardButton(BUTTON_ADD_NAME),
-                    ],
+                    [InlineKeyboardButton(BUTTON5_ANONYMOUS_SEND, callback_data=CALLBACK_BUTTON5_ANONYMOUS_SEND)],
+                    [InlineKeyboardButton(BUTTON6_ADD_NAME, callback_data=CALLBACK_BUTTON6_ADD_NAME)],
                 ]
-                pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
+                pic_name = 'wish_'+str(update.message.chat.id)+'_'+PICTURE_NAME
                 write_wish(text=wishtext, pic_name=PICTURE_NAME, new_name=pic_name)
                 context.bot.sendPhoto(
                     chat_id=update.message.chat.id,
                     photo=open(pic_name, 'rb'),
                 )
                 update.message.reply_text(
-                    text=f"Предпросмотр открытки",
-                    reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+                    text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять пожелание, введите его заново. Либо выберите нужна ли на открытке подпись⬇️",
+                    reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
                 )
         elif context.user_data[FROM_MODE] == 'True':
             from_whom = text
             context.user_data[FROM_WHOM] = from_whom
             logger.info('user_data: %s', context.user_data)
             keyboard = [
-                [
-                    KeyboardButton(BUTTON_SCREENSCHOT),
-                    KeyboardButton(BUTTON_NOSCREENSCHOT),
-                ],
+                [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
+                [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
             ]
-            pic_name = str(update.message.chat.id) + '_' + PICTURE_NAME
-            write_from(text=from_whom, pic_name=pic_name, new_name=pic_name)
+            pic_name_wish = 'wish_' + str(update.message.chat.id) + '_' + PICTURE_NAME
+            pic_name = 'from_'+str(update.message.chat.id) + '_' + PICTURE_NAME
+            write_from(text=from_whom, pic_name=pic_name_wish, new_name=pic_name)
             context.bot.sendPhoto(
                 chat_id=update.message.chat.id,
                 photo=open(pic_name, 'rb'),
             )
             update.message.reply_text(
-                text=f"Предпросмотр открытки",
-                reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+                text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять подпись, введите ее заново. Либо выберите нужно ли прикреплять скриншот.",
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
         else:
             update.message.reply_text('Неверный формат ввода')
 
 def photo_handler(update: Update, context: CallbackContext):
-    user = update.message.from_user
     name_screenshot = 'screen_'+str(update.message.chat.id)+'.png'
     photo_file = update.message.photo[-1].get_file()
     photo_file.download(name_screenshot)
     logger.info("Photo of %s", name_screenshot)
-    keyboard = [[KeyboardButton(BUTTON_READY)]]
+    keyboard = [[InlineKeyboardButton(BUTTON9_READY, callback_data=CALLBACK_BUTTON9_READY)]]
     update.message.reply_text(
         text='Скриншот добавлен',
-        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
     )
 
 @debug_request
