@@ -8,10 +8,11 @@ from db import *
 from picture import write_wish, write_from
 import os
 from appearance_funtions import *
+from telegram import InputMediaPhoto, InputFile
 
 logger = getLogger(__name__)
 
-NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE = range(16)
+NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE, PIC_NUM = range(17)
 
 
 BUTTON1_FIND = "Найти вишлист 🔎"
@@ -35,6 +36,11 @@ CALLBACK_BUTTON8_NO_SCREENSHOT = "callback_button_no_screenshot"
 CALLBACK_BUTTON9_READY = "callback_button_ready"
 
 BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
+
+BUTTON_PIC1 = "1"
+BUTTON_PIC2 = "2"
+CALLBACK_BUTTON_PIC1 = "callback_button_pic1"
+CALLBACK_BUTTON_PIC2 = "callback_button_pic2"
 
 
 def debug_request(f):
@@ -126,8 +132,38 @@ def do_create(update: Update, context: CallbackContext):
         return NAME
 
     if init == CALLBACK_BUTTON4_GENERATE_POSTCARD:
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[FROM_MODE] = 'False'
+        keyboard = [
+            [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
+             InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2)]
+        ]
+        update.callback_query.bot.send_media_group(
+            chat_id=chat_id,
+            media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[0], 'rb')),
+                   InputMediaPhoto(open(PICTURE_NAMES_DEMO[1], 'rb'))]
+        )
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f'Выберите внешний вид открытки',
+            reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+            parse_mode=ParseMode.HTML
+        )
+
+    if init == CALLBACK_BUTTON_PIC1:
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[PIC_NUM] = 0
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+            parse_mode=ParseMode.HTML
+        )
+
+    if init == CALLBACK_BUTTON_PIC2:
+        context.user_data[WISH_MODE] = 'True'
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[PIC_NUM] = 1
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
@@ -150,7 +186,7 @@ def do_create(update: Update, context: CallbackContext):
             [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
             [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
         ]
-        pic_name = 'wish_' + str(chat_id) + '_' +PICTURE_NAME
+        pic_name = 'wish_' + str(chat_id) + '_' +PICTURE_NAMES[context.user_data[PIC_NUM]]
         update.callback_query.bot.sendPhoto(
             chat_id=chat_id,
             photo=open(pic_name, 'rb'),
@@ -176,10 +212,10 @@ def do_create(update: Update, context: CallbackContext):
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
         bot = update.callback_query.bot
-        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAME):
-            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAME
+        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]):
+            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         else:
-            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAME
+            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         bot.send_message(
             chat_id=wishlist_author_user_id,
             text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
@@ -198,8 +234,8 @@ def do_create(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
-        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAME})")
-        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAME})")
+        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
 
     elif init == CALLBACK_BUTTON9_READY:
         context.user_data[FROM_MODE] = 'False'
@@ -207,10 +243,10 @@ def do_create(update: Update, context: CallbackContext):
         wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
-        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAME):
-            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAME
+        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]):
+            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         else:
-            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAME
+            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         bot = update.callback_query.bot
         bot.send_message(
             chat_id=wishlist_author_user_id,
@@ -235,8 +271,8 @@ def do_create(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
         os.system("(rm -rf screen_" + str(chat_id) + ".png)")
-        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAME})")
-        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAME})")
+        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
 
 @debug_request
 def message_handler(update: Update, context: CallbackContext):
@@ -274,8 +310,8 @@ def message_handler(update: Update, context: CallbackContext):
                     [InlineKeyboardButton(BUTTON5_ANONYMOUS_SEND, callback_data=CALLBACK_BUTTON5_ANONYMOUS_SEND)],
                     [InlineKeyboardButton(BUTTON6_ADD_NAME, callback_data=CALLBACK_BUTTON6_ADD_NAME)],
                 ]
-                pic_name = 'wish_'+str(update.message.chat.id)+'_'+PICTURE_NAME
-                write_wish(text=wishtext, pic_name=PICTURE_NAME, new_name=pic_name)
+                pic_name = 'wish_'+str(update.message.chat.id)+'_'+PICTURE_NAMES[context.user_data[PIC_NUM]]
+                write_wish(text=wishtext, pic_number=context.user_data[PIC_NUM], pic_name=PICTURE_NAMES[context.user_data[PIC_NUM]], new_name=pic_name)
                 context.bot.sendPhoto(
                     chat_id=update.message.chat.id,
                     photo=open(pic_name, 'rb'),
@@ -292,9 +328,9 @@ def message_handler(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
                 [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
             ]
-            pic_name_wish = 'wish_' + str(update.message.chat.id) + '_' + PICTURE_NAME
-            pic_name = 'from_'+str(update.message.chat.id) + '_' + PICTURE_NAME
-            write_from(text=from_whom, pic_name=pic_name_wish, new_name=pic_name)
+            pic_name_wish = 'wish_' + str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+            pic_name = 'from_'+str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+            write_from(text=from_whom, pic_number=context.user_data[PIC_NUM], pic_name=pic_name_wish, new_name=pic_name)
             context.bot.sendPhoto(
                 chat_id=update.message.chat.id,
                 photo=open(pic_name, 'rb'),
@@ -542,8 +578,7 @@ def about(update: Update, context: CallbackContext):
 
 Бот не хранит никакую информацию об отправителях открыток. Когда вы взаимодейтвуете с чьим-то вишлистом ваше имя нигде не отображается. Иными словами, даже авторы бота не могут узнать кем отправлены анонимные открытки.
 
-Художник открытки [66hellena66](https://www.instagram.com/66hellena66/)
-Художник аватарки [Студия логотипов Станислава Гора](http://logotype.su)
+Большое спасибо художникам [66hellena66](https://www.instagram.com/66hellena66/) и [Студия логотипов Станислава Гора](http://logotype.su)
 Телеграм создателей бота - [@neverending_why](@neverending_why). Вы можете написать нам если увидели ошибку или хотите что-то улучшить в работе бота. Мы рады любым предложениям и замечаниям.🤍
 
 *Выберите режим:*
