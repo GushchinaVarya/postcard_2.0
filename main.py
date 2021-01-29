@@ -304,6 +304,7 @@ def message_handler(update: Update, context: CallbackContext):
                     parse_mode=ParseMode.HTML,
                     disable_notification=True
                 )
+                logger.info('notified chat_id: %s', chat_id)
         else:
             update.message.reply_text('Неверный формат ввода')
 
