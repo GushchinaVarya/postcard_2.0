@@ -295,6 +295,17 @@ def message_handler(update: Update, context: CallbackContext):
                 text='Вишлист c таким именем не найден. Введите другой вишлист.',
                 reply_markup=ReplyKeyboardRemove()
             )
+    elif text == "Нотификация для всех пользователей":
+        if update.message.chat.id == ADMIN_ID:
+            for chat_id in ALL_USERS:
+                context.bot.send_message(
+                    chat_id=chat_id,
+                    text=UPDATE_TEXT,
+                    parse_mode=ParseMode.HTML,
+                    disable_notification=True
+                )
+        else:
+            update.message.reply_text('Неверный формат ввода')
 
     else:
         if context.user_data[WISH_MODE] == 'True':
@@ -591,6 +602,8 @@ def about(update: Update, context: CallbackContext):
 
 def main():
     logger.info('Start bot')
+
+
     req = Request(
         connect_timeout=0.5,
         read_timeout=1.0,
