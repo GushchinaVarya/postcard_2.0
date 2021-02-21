@@ -2,6 +2,7 @@ from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, Ke
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 from telegram.ext import CallbackContext, ConversationHandler
+from telegram.error import Unauthorized
 from telegram.utils.request import Request
 from config import *
 from db import *
@@ -9,6 +10,8 @@ from picture import write_wish, write_from
 import os
 from appearance_funtions import *
 from telegram import InputMediaPhoto, InputFile
+import numpy as np
+import pandas as pd
 
 logger = getLogger(__name__)
 
@@ -58,6 +61,12 @@ def debug_request(f):
 def start_buttons_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
+    chat_id = update.message.chat.id
+    user_id_df = pd.read_csv('user_ids.csv', index_col=0)
+    if chat_id not in user_id_df.user_id.values:
+        user_id_df = user_id_df.append(pd.DataFrame({'user_id': np.array([chat_id])})).reset_index(drop=True)
+        user_id_df.to_csv('user_ids.csv')
+        logger.info('added to file of unique users chat_id: %s', chat_id)
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
         [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
@@ -87,7 +96,6 @@ def do_create(update: Update, context: CallbackContext):
             chat_id=chat_id,
             text='Введите название вишлиста используя знак #\n\nпример #ДеньРожденияИванаИванова01Янв2021',
             reply_markup=ReplyKeyboardRemove()
-
         )
 
     if init == CALLBACK_BUTTON3_SHOW:
@@ -120,7 +128,8 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON2_MAKE:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
-        logger.debug(init)
+        #logger.debug(init)
+        logger.info(f'{chat_id} started making wishlist')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='''
@@ -134,6 +143,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON4_GENERATE_POSTCARD:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
+        logger.info(f'{chat_id} started generating postcard')
         keyboard = [
             [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
              InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2)]
@@ -154,6 +164,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[PIC_NUM] = 0
+        logger.info(f'{chat_id} choose pic1')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
@@ -164,6 +175,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[PIC_NUM] = 1
+        logger.info(f'{chat_id} choose pic2')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
@@ -234,8 +246,10 @@ def do_create(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
+        logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
         os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        logger.info(f'all temporary data for {chat_id} was successfully deleted')
 
     elif init == CALLBACK_BUTTON9_READY:
         context.user_data[FROM_MODE] = 'False'
@@ -270,9 +284,11 @@ def do_create(update: Update, context: CallbackContext):
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
+        logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
         os.system("(rm -rf screen_" + str(chat_id) + ".png)")
         os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        logger.info(f'all temporary data for {chat_id} was successfully deleted')
 
 @debug_request
 def message_handler(update: Update, context: CallbackContext):
@@ -297,14 +313,20 @@ def message_handler(update: Update, context: CallbackContext):
             )
     elif text == "Нотификация для всех пользователей":
         if update.message.chat.id == ADMIN_ID:
-            for chat_id in ALL_USERS:
-                context.bot.send_message(
-                    chat_id=chat_id,
-                    text=UPDATE_TEXT,
-                    parse_mode=ParseMode.HTML,
-                    disable_notification=True
-                )
-                logger.info('notified chat_id: %s', chat_id)
+            user_id_df = pd.read_csv('user_ids.csv', index_col=0)
+            for chat_id in user_id_df.user_id.values:
+                try:
+                    context.bot.send_message(
+                        chat_id=int(chat_id),
+                        text=UPDATE_TEXT,
+                        parse_mode=ParseMode.HTML,
+                        disable_notification=True
+                    )
+                    logger.info('notified chat_id: %s', chat_id)
+                except Unauthorized:
+                    logger.info('Unauthorized chat_id: %s', chat_id)
+                except:
+                    logger.info('Unknown ERROR chat_id: %s', chat_id)
         else:
             update.message.reply_text('Неверный формат ввода')
 
@@ -384,10 +406,12 @@ def name_handler(update: Update, context: CallbackContext):
             update.message.reply_text(
                 text='''
 Название сохранено✔️.
+
 Введите приветственное обращение к друзьям.
 Пример:
 Привет! Это Иван Иванов. Буду рад если вы пожертвуете в один из следующих фондов, для меня их деятельность очень важна.
-''',
+
+Отменить создание вишлиста - /cancel''',
                 parse_mode=ParseMode.HTML,
             )
             return WELCOME_SPEECH
@@ -400,7 +424,7 @@ def name_handler(update: Update, context: CallbackContext):
 def welcome_speech_handler(update: Update, context: CallbackContext):
     context.user_data[WELCOME_SPEECH] = update.message.text
     update.message.reply_text(
-        text='Введите название первой благотворительной организации (максимум - 3)',
+        text='Введите название первой благотворительной организации (максимум - 3)\n\nОтменить создание вишлиста - /cancel',
         parse_mode=ParseMode.HTML,
     )
     return FOUNDATION_0
@@ -410,7 +434,7 @@ def foundation_0_handler(update: Update, context: CallbackContext):
     context.user_data[FOUNDATION_0] = update.message.text
     logger.info('user_data: %s', context.user_data)
     update.message.reply_text(
-        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта.\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate',
+        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта.\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
         parse_mode=ParseMode.HTML,
     )
     return METHOD_0
@@ -421,7 +445,7 @@ def method_0_handler(update: Update, context: CallbackContext):
     context.user_data[N_FOUNDS] = 1
     logger.info('user_data: %s', context.user_data)
     update.message.reply_text(
-        text="Введите название второй благотворительной организации. Если одной достаточно нажмите /skip",
+        text="Введите название второй благотворительной организации.\n\nЕсли одной достаточно нажмите /skip . Отменить создание вишлиста - /cancel",
         )
     return FOUNDATION_1
 
@@ -430,7 +454,7 @@ def foundation_1_handler(update: Update, context: CallbackContext):
     context.user_data[FOUNDATION_1] = update.message.text
     logger.info('user_data: %s', context.user_data)
     update.message.reply_text(
-        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate',
+        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
         parse_mode=ParseMode.HTML,
     )
     return METHOD_1
@@ -441,7 +465,7 @@ def method_1_handler(update: Update, context: CallbackContext):
     context.user_data[N_FOUNDS] = 2
     logger.info('user_data: %s', context.user_data)
     update.message.reply_text(
-        text="Введите название третьей благотворительной организации. Если двух достаточно нажмите /skip",
+        text="Введите название третьей благотворительной организации.\nЕсли двух достаточно нажмите /skip . Отменить создание вишлиста - /cancel",
     )
     return FOUNDATION_2
 
@@ -450,7 +474,7 @@ def foundation_2_handler(update: Update, context: CallbackContext):
     context.user_data[FOUNDATION_2] = update.message.text
     logger.info('user_data: %s', context.user_data)
     update.message.reply_text(
-        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate',
+        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
         parse_mode=ParseMode.HTML,
     )
     return METHOD_2
@@ -463,8 +487,11 @@ def method_2_handler(update: Update, context: CallbackContext):
     update.message.reply_text(
         text=f'''
 Введите сообщение-благодарность. Это сообщение ваши друзья увидят когда отправят вам открытку.
+
 Пример:
-Спасибо вам за пожертвование. Вы классные. Ваш Иван Иванов🤍''',
+Спасибо вам за пожертвование. Вы классные. Ваш Иван Иванов🤍
+
+Отменить создание вишлиста - /cancel''',
         parse_mode=ParseMode.HTML,
     )
 
@@ -477,8 +504,11 @@ def skip(update: Update, context: CallbackContext) -> int:
         text=f'''
 Ввод оранизаций завершен
 Введите сообщение-благодарность. Это сообщение ваши друзья увидят когда отправят вам открытку.
+
 Пример:
 Спасибо вам за пожертвование. Вы классные. Ваш Иван Иванов🤍
+
+Отменить создание вишлиста - /cancel
 ''',
         parse_mode=ParseMode.HTML
     )
@@ -566,7 +596,7 @@ def finish_creating_handler(update: Update, context: CallbackContext):
 
 @debug_request
 def cancel_handler(update: Update, context: CallbackContext) -> int:
-    logger.info("User %s canceled the conversation.", context.user_data)
+    logger.info(f'{update.message.chat.id} cancelled making wishlist')
     update.message.reply_text(
         text='Вы отменили создание вишлиста. Чтобы вернуться нажмите /start',
         reply_markup=ReplyKeyboardRemove()
