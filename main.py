@@ -62,10 +62,10 @@ def start_buttons_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     chat_id = update.message.chat.id
-    user_id_df = pd.read_csv('user_ids.csv', index_col=0)
+    user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
     if chat_id not in user_id_df.user_id.values:
         user_id_df = user_id_df.append(pd.DataFrame({'user_id': np.array([chat_id])})).reset_index(drop=True)
-        user_id_df.to_csv('user_ids.csv')
+        user_id_df.to_csv(USER_IDS_FILE)
         logger.info('added to file of unique users chat_id: %s', chat_id)
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
@@ -313,7 +313,7 @@ def message_handler(update: Update, context: CallbackContext):
             )
     elif text == "Нотификация для всех пользователей":
         if update.message.chat.id == ADMIN_ID:
-            user_id_df = pd.read_csv('user_ids.csv', index_col=0)
+            user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
             for chat_id in user_id_df.user_id.values:
                 try:
                     context.bot.send_message(

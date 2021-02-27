@@ -2,4 +2,6 @@ config.py
 __pycache__
 wishlist.db
 .DS_Store
+user_ids_test.csv
 user_ids.csv
+log.log
