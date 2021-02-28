@@ -79,33 +79,45 @@ def show_my_wishlists(user_id: int, limit: int = 10):
     c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE user_id = ? ORDER BY id DESC LIMIT ?', (user_id, limit))
     return c.fetchall()
 
+def delete(namelowreg: str):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute('DELETE FROM user_wishlist WHERE namelowreg = ?', (namelowreg,))
+    conn.commit()
+    return c.fetchall()
+
 if __name__ == '__main__':
     #init_db(True)
     init_db(False)
-    add_message(user_id=123274089,
-                name='ДеньРожденияИванаИванова01Янв2021',
-                namelowreg='деньрожденияиванаиванова01янв2021',
-                welcome_speech='Привет! Это Иван Иванов. Буду рад если вы пожертвуете в один из следующих фондов, для меня их деятельность очень важна.',
-                foundation0='Фонд WWF',
-                method0='вебсайт https://www.worldwildlife.org',
-                foundation1='Фонд "Нужна помощь" ',
-                method1='https://nuzhnapomosh.ru/donate/',
-                foundation2='foundation2',
-                method2='method2',
-                thanks_speech='Спасибо вам за пожертвование. Вы классные. Ваш Иван Иванов🤍',
-                n_founds=2)
+    #delete('деньрожденияиванаиванова01янв2022')
+    #add_message(user_id=123274089,
+    #            name='ДеньРожденияИванаИванова01Янв2022',
+    #            namelowreg='деньрожденияиванаиванова01янв2022',
+    #            welcome_speech='Привет! Это Иван Иванов. Буду рад если вы пожертвуете в один из следующих фондов, для меня их деятельность очень важна.',
+    #            foundation0='Фонд WWF',
+    #            method0='вебсайт https://www.worldwildlife.org',
+    #            foundation1='Фонд "Нужна помощь" ',
+    #            method1='https://nuzhnapomosh.ru/donate/',
+    #            foundation2='foundation2',
+    #            method2='method2',
+    #            thanks_speech='Спасибо вам за пожертвование. Вы классные. Ваш Иван Иванов🤍',
+    #            n_founds=2)
 
 
     r = count_messages(user_id=123274089)
     print(r)
 
-    r = find_wishlist(namelowreg='деньрождениявари13012020', limit=1)
-    print(r)
+    #r = find_wishlist(namelowreg='деньрождениявари13012020', limit=1)
+    #print(r)
 
-    print('ДеньРожденияИванаИванова01Янв2021', wishlist_name_available('деньрожденияиванаиванова01янв2021'))
-    print('деньрож20', wishlist_name_available('деньрож20'))
+    #print('ДеньРожденияИванаИванова01Янв2021', wishlist_name_available('деньрожденияиванаиванова01янв2021'))
+    #print('деньрож20', wishlist_name_available('деньрож20'))
 
     r = show_my_wishlists(user_id=123274089, limit=10)
     print(len(r))
     for i in r:
         print(i)
+
+    print('деньрожденияиванаиванова01янв2022', wishlist_name_available('деньрожденияиванаиванова01янв2022'))
+    #r = delete('деньрожденияиванаиванова01янв2022')
+    #print('деньрожденияиванаиванова01янв2022', wishlist_name_available('деньрожденияиванаиванова01янв2022'))

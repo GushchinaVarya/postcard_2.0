@@ -75,3 +75,10 @@ def show_my_wishlists(conn, user_id: int, limit: int = 1):
     c = conn.cursor()
     c.execute('SELECT user_id, name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech, n_founds FROM user_wishlist WHERE user_id = ? ORDER BY id DESC LIMIT ?', (user_id, limit))
     return c.fetchall()
+
+@ensure_connection
+def delete(conn, namelowreg: str):
+    c = conn.cursor()
+    c.execute('DELETE FROM user_wishlist WHERE namelowreg = ?', (namelowreg,))
+    conn.commit()
+    return c.fetchall()

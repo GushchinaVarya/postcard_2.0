@@ -15,7 +15,7 @@ import pandas as pd
 
 logger = getLogger(__name__)
 
-NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE, PIC_NUM = range(17)
+NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE, PIC_NUM, DELETE_MODE = range(18)
 
 
 BUTTON1_FIND = "Найти вишлист 🔎"
@@ -27,6 +27,7 @@ BUTTON6_ADD_NAME = "Подписать открытку"
 BUTTON7_ADD_SCREENSHOT = "Добавить скриншот перевода"
 BUTTON8_NO_SCREENSHOT = "Отправить без скриншота"
 BUTTON9_READY = "Готово! Отправить автору вишлиста!"
+BUTTON10_DELETE_WISHLIST = "Удалить вишлист"
 
 CALLBACK_BUTTON1_FIND = "callback_button_find"
 CALLBACK_BUTTON2_MAKE = "callback_button_make"
@@ -37,6 +38,7 @@ CALLBACK_BUTTON6_ADD_NAME = "callback_button_add_name"
 CALLBACK_BUTTON7_ADD_SCREENSHOT = "callback_button_add_screenshot"
 CALLBACK_BUTTON8_NO_SCREENSHOT = "callback_button_no_screenshot"
 CALLBACK_BUTTON9_READY = "callback_button_ready"
+CALLBACK_BUTTON10_DELETE_WISHLIST = "callback_button_delete_wishlist"
 
 BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
 
@@ -61,6 +63,7 @@ def debug_request(f):
 def start_buttons_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
     chat_id = update.message.chat.id
     user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
     if chat_id not in user_id_df.user_id.values:
@@ -92,6 +95,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON1_FIND:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='Введите название вишлиста используя знак #\n\nпример #ДеньРожденияИванаИванова01Янв2021',
@@ -101,6 +105,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON3_SHOW:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         wishlists = show_my_wishlists(user_id=chat_id, limit=10)
         if len(wishlists) == 0:
             update.callback_query.bot.send_message(
@@ -110,6 +115,9 @@ def do_create(update: Update, context: CallbackContext):
 
             )
         else:
+            keyboard = [
+                [InlineKeyboardButton(BUTTON10_DELETE_WISHLIST, callback_data=CALLBACK_BUTTON10_DELETE_WISHLIST)],
+            ]
             for wishlist_i in wishlists:
                 update.callback_query.bot.send_message(
                     chat_id=chat_id,
@@ -119,22 +127,25 @@ def do_create(update: Update, context: CallbackContext):
                 )
             update.callback_query.bot.send_message(
                 chat_id=chat_id,
-                text='Чтобы найти другой вишлист или создать новый нажмите /start',
+                text='''
+Чтобы найти другой вишлист или создать новый нажмите /start 
+Чтобы удалить один из этих вишлистов нажмите УДАЛИТЬ ВИШЛИСТ''',
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
-                reply_markup=ReplyKeyboardRemove()
-
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
     if init == CALLBACK_BUTTON2_MAKE:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
-        #logger.debug(init)
+        context.user_data[DELETE_MODE] = 'False'
         logger.info(f'{chat_id} started making wishlist')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='''
 <b>Придумайте имя вашего вишлиста.</b>
-Одно слово без пробелов и знаков. Пример ДеньРожденияИванаИванова01Янв2021''',
+Одно слово без пробелов и знаков. Пример ДеньРожденияИванаИванова01Янв2021
+
+Отменить создание вишлиста - /cancel''',
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML
         )
@@ -143,6 +154,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON4_GENERATE_POSTCARD:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         logger.info(f'{chat_id} started generating postcard')
         keyboard = [
             [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
@@ -163,6 +175,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON_PIC1:
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 0
         logger.info(f'{chat_id} choose pic1')
         update.callback_query.bot.send_message(
@@ -174,6 +187,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON_PIC2:
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 1
         logger.info(f'{chat_id} choose pic2')
         update.callback_query.bot.send_message(
@@ -185,6 +199,7 @@ def do_create(update: Update, context: CallbackContext):
     if init == CALLBACK_BUTTON6_ADD_NAME:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'True'
+        context.user_data[DELETE_MODE] = 'False'
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='Введите подпись\nнапример: Oт твоей лучшей подруги',
@@ -194,6 +209,7 @@ def do_create(update: Update, context: CallbackContext):
     elif init == CALLBACK_BUTTON5_ANONYMOUS_SEND:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         keyboard = [
             [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
             [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
@@ -212,6 +228,7 @@ def do_create(update: Update, context: CallbackContext):
     elif init == CALLBACK_BUTTON7_ADD_SCREENSHOT:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='Пришлите скриншот перевода'
@@ -220,6 +237,7 @@ def do_create(update: Update, context: CallbackContext):
     elif init == CALLBACK_BUTTON8_NO_SCREENSHOT:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
@@ -254,6 +272,7 @@ def do_create(update: Update, context: CallbackContext):
     elif init == CALLBACK_BUTTON9_READY:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
         wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
@@ -290,27 +309,40 @@ def do_create(update: Update, context: CallbackContext):
         os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         logger.info(f'all temporary data for {chat_id} was successfully deleted')
 
+    elif init == CALLBACK_BUTTON10_DELETE_WISHLIST:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'True'
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f"Введите название вишлиста который нужно удалить (просто имя без знака #)",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
 @debug_request
 def message_handler(update: Update, context: CallbackContext):
     text = update.message.text
     if text[0] == '#':
-        wishlistname = text[1:]
-        wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
-        if wishlist:
-            context.user_data[FOUND_WISHLIST] = wishlistname
-            keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
-            reply_text = print_wishlist(wishlist[0])
-            update.message.reply_text(
-                text=f'Вишлист найден!✔️\n\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
-                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=True
-            )
+        if context.user_data[DELETE_MODE] == 'True':
+            update.message.reply_text('Чтобы удалить вишлист введите его название без # . Вернуться в главное меню - /start')
         else:
-            update.message.reply_text(
-                text='Вишлист c таким именем не найден. Введите другой вишлист.',
-                reply_markup=ReplyKeyboardRemove()
-            )
+            wishlistname = text[1:]
+            wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
+            if wishlist:
+                context.user_data[FOUND_WISHLIST] = wishlistname
+                keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
+                reply_text = print_wishlist(wishlist[0])
+                update.message.reply_text(
+                    text=f'Вишлист найден!✔️\n\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                    reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                    parse_mode=ParseMode.HTML,
+                    disable_web_page_preview=True
+                )
+            else:
+                update.message.reply_text(
+                    text='Вишлист c таким именем не найден. Введите другой вишлист.',
+                    reply_markup=ReplyKeyboardRemove()
+                )
     elif text == "Нотификация для всех пользователей":
         if update.message.chat.id == ADMIN_ID:
             user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
@@ -373,12 +405,26 @@ def message_handler(update: Update, context: CallbackContext):
                 text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять подпись, введите ее заново. Либо выберите нужно ли прикреплять скриншот.",
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
+        elif context.user_data[DELETE_MODE] == 'True':
+            wishlistname = text
+            wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
+            if wishlist:
+                if wishlist[0][0] != update.message.chat.id:
+                    update.message.reply_text('Вы не можете удалить этот вишлист, так как не Вы его создали. Введите другой вишлист или нажмите /start')
+                if wishlist[0][0] == update.message.chat.id:
+                    delete(namelowreg=wishlistname.lower())
+                    update.message.reply_text('Вишлист успешно удален. Чтобы найти или создать вишлист нажмите /start')
+                    context.user_data[DELETE_MODE] = 'False'
+                    logger.info(f'wishlist {wishlistname} deleted')
+            else:
+                update.message.reply_text('Вишлист c таким именем не найден. Введите другой вишлист или нажмите /start')
         else:
             update.message.reply_text('Неверный формат ввода')
 
 def photo_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
     name_screenshot = 'screen_'+str(update.message.chat.id)+'.png'
     photo_file = update.message.photo[-1].get_file()
     photo_file.download(name_screenshot)
@@ -393,6 +439,7 @@ def photo_handler(update: Update, context: CallbackContext):
 def name_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
     name = update.message.text
     if len(name.split(' ')) > 1:
         update.message.reply_text(
@@ -547,6 +594,9 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
 
 @debug_request
 def finish_creating_handler(update: Update, context: CallbackContext):
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
     user = update.effective_user
     name = context.user_data[NAME]
     foundation0 = context.user_data[FOUNDATION_0]
@@ -596,6 +646,9 @@ def finish_creating_handler(update: Update, context: CallbackContext):
 
 @debug_request
 def cancel_handler(update: Update, context: CallbackContext) -> int:
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
     logger.info(f'{update.message.chat.id} cancelled making wishlist')
     update.message.reply_text(
         text='Вы отменили создание вишлиста. Чтобы вернуться нажмите /start',
@@ -605,6 +658,9 @@ def cancel_handler(update: Update, context: CallbackContext) -> int:
 
 @debug_request
 def about(update: Update, context: CallbackContext):
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
         [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
