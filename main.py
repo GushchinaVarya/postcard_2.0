@@ -39,6 +39,7 @@ CALLBACK_BUTTON7_ADD_SCREENSHOT = "callback_button_add_screenshot"
 CALLBACK_BUTTON8_NO_SCREENSHOT = "callback_button_no_screenshot"
 CALLBACK_BUTTON9_READY = "callback_button_ready"
 CALLBACK_BUTTON10_DELETE_WISHLIST = "callback_button_delete_wishlist"
+CALLBACK_BUTTON11_SAVE_WISHLIST = "callback_button_save_wishlist"
 
 BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
 
@@ -148,6 +149,7 @@ def do_create(update: Update, context: CallbackContext):
             text='''
 <b>Придумайте имя вашего вишлиста.</b>
 Одно слово без пробелов и знаков. Пример ДеньРожденияИванаИванова01Янв2021
+Чтобы создать вишлист для 8 марта начните название со слов "8марта". Пример 8мартаДляАнныСеменовой
 
 Отменить создание вишлиста - /cancel''',
             reply_markup=ReplyKeyboardRemove(),
@@ -615,7 +617,8 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
     name = context.user_data[NAME]
     n_founds = context.user_data[N_FOUNDS]
     logger.info("User %s wants to skip other funds.", context.user_data)
-    keyboard = [[KeyboardButton(BUTTON_SAVE_WISHLIST)]]
+    #keyboard = [[KeyboardButton(BUTTON_SAVE_WISHLIST)]]
+    keyboard = [[InlineKeyboardButton(BUTTON_SAVE_WISHLIST, callback_data=CALLBACK_BUTTON11_SAVE_WISHLIST)]]
     welcome_speech = context.user_data[WELCOME_SPEECH]
     thanks_speech = context.user_data[THANKS_SPEECH]
     foundation0 = context.user_data[FOUNDATION_0]
@@ -634,7 +637,7 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
         reply_text = print_3_funds(name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech)
     update.message.reply_text(
         text=f"{reply_text}\nЕсли все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel",
-        reply_markup=ReplyKeyboardMarkup(keyboard, one_time_keyboard=True),
+        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True
     )
@@ -685,7 +688,8 @@ def finish_creating_handler(update: Update, context: CallbackContext):
                     thanks_speech=thanks_speech,
                     n_founds=n_founds
                 )
-    update.message.reply_text(
+    update.callback_query.bot.send_message(
+        chat_id=update.callback_query.message.chat.id,
         text=f'''
 Вишлист сохранен✔️
 Отправьте вашим друзьям тег #{name}, и они смогут с помощью данного бота найти ваш вишлист и отправить вам открытку.
@@ -796,7 +800,7 @@ def main():
                 MessageHandler(Filters.text, thanks_speech_handler, pass_user_data=True),
             ],
             CONFIRM: [
-                MessageHandler(Filters.text, finish_creating_handler, pass_user_data=True),
+                CallbackQueryHandler(finish_creating_handler, pass_user_data=True),
             ]
         },
         fallbacks=[
