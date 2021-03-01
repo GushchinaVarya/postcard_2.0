@@ -31,6 +31,18 @@ def write_wish(text: str, pic_number:int, pic_name: str, new_name: str):
         loc = (50, 450)
         color = 'white'
 
+    if pic_number == 2:
+        rowlen = 28
+        fontsize = 75
+        loc = (50, 50)
+        color = 'black'
+
+    if pic_number == 3:
+        rowlen = 28
+        fontsize = 75
+        loc = (50, 50)
+        color = 'black'
+
     prepared_text = prepare_text(text, rowlen)
     if prepared_text[0] == ' ':
         prepared_text = prepared_text[1:]
@@ -56,6 +68,18 @@ def write_from(text: str, pic_number:int, pic_name: str, new_name: str):
         rowlen = 20
         fontsize = 25
         loc = (50, 1020)
+        color = 'black'
+
+    if pic_number == 2:
+        rowlen = 20
+        fontsize = 25
+        loc = (50, 500)
+        color = 'black'
+
+    if pic_number == 3:
+        rowlen = 20
+        fontsize = 25
+        loc = (50, 500)
         color = 'black'
 
     prepared_text = prepare_text(text, rowlen)

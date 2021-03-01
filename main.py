@@ -44,8 +44,12 @@ BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
 
 BUTTON_PIC1 = "1"
 BUTTON_PIC2 = "2"
+
 CALLBACK_BUTTON_PIC1 = "callback_button_pic1"
 CALLBACK_BUTTON_PIC2 = "callback_button_pic2"
+
+CALLBACK_BUTTON_8MARCH_PIC1 = "callback_button_8march_pic1"
+CALLBACK_BUTTON_8MARCH_PIC2 = "callback_button_8march_pic2"
 
 
 def debug_request(f):
@@ -156,21 +160,42 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
         logger.info(f'{chat_id} started generating postcard')
-        keyboard = [
-            [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
-             InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2)]
-        ]
-        update.callback_query.bot.send_media_group(
-            chat_id=chat_id,
-            media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[0], 'rb')),
-                   InputMediaPhoto(open(PICTURE_NAMES_DEMO[1], 'rb'))]
-        )
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'Выберите внешний вид открытки',
-            reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            parse_mode=ParseMode.HTML
-        )
+        if context.user_data[FOUND_WISHLIST][:6] == '8марта':
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Открытки для этого вишлиста будут доступны только с 5го марта. Введите другой вишлист или нажмите /start',
+            )
+            #keyboard = [
+            #    [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_8MARCH_PIC1),
+            #     InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_8MARCH_PIC2)]
+            #]
+            #update.callback_query.bot.send_media_group(
+            #    chat_id=chat_id,
+            #    media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[2], 'rb')),
+            #           InputMediaPhoto(open(PICTURE_NAMES_DEMO[3], 'rb'))]
+            #)
+            #update.callback_query.bot.send_message(
+            #    chat_id=chat_id,
+            #    text=f'Выберите внешний вид открытки',
+            #    reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+            #    parse_mode=ParseMode.HTML
+            #)
+        else:
+            keyboard = [
+                [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
+                 InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2)]
+            ]
+            update.callback_query.bot.send_media_group(
+                chat_id=chat_id,
+                media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[0], 'rb')),
+                       InputMediaPhoto(open(PICTURE_NAMES_DEMO[1], 'rb'))]
+            )
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Выберите внешний вид открытки',
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                parse_mode=ParseMode.HTML
+            )
 
     if init == CALLBACK_BUTTON_PIC1:
         context.user_data[WISH_MODE] = 'True'
@@ -190,6 +215,30 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 1
         logger.info(f'{chat_id} choose pic2')
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+            parse_mode=ParseMode.HTML
+        )
+
+    if init == CALLBACK_BUTTON_8MARCH_PIC1:
+        context.user_data[WISH_MODE] = 'True'
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
+        context.user_data[PIC_NUM] = 2
+        logger.info(f'{chat_id} choose 8 march pic1')
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+            parse_mode=ParseMode.HTML
+        )
+
+    if init == CALLBACK_BUTTON_8MARCH_PIC2:
+        context.user_data[WISH_MODE] = 'True'
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
+        context.user_data[PIC_NUM] = 3
+        logger.info(f'{chat_id} choose 8 march pic2')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
@@ -637,7 +686,11 @@ def finish_creating_handler(update: Update, context: CallbackContext):
                     n_founds=n_founds
                 )
     update.message.reply_text(
-        text=f'Вишлист сохранен✔️.\nОтправьте вашим друзьям тег #{name}, и они смогут с помощью данного бота найти ваш вишлист и отправить вам открытку',
+        text=f'''
+Вишлист сохранен✔️
+Отправьте вашим друзьям тег #{name}, и они смогут с помощью данного бота найти ваш вишлист и отправить вам открытку.
+
+Чтобы найти или создать вишлист нажмите /start''',
         reply_markup=ReplyKeyboardRemove(),
         parse_mode=ParseMode.HTML
     )
