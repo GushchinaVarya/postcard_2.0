@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+from config import FONT_NAME
 
 def prepare_text(text: str, max_width:int):
     arrwords = text.split(' ')
@@ -20,34 +21,37 @@ def prepare_text(text: str, max_width:int):
 
 def write_wish(text: str, pic_number:int, pic_name: str, new_name: str):
     if pic_number == 0:
-        rowlen = 28
-        fontsize = 75
-        loc = (1050, 200)
+        #rowlen = 35
+        #fontsize = 75
+        #loc = (1050, 200)
+        rowlen = 35
+        fontsize = 40
+        loc = (570, 100)
         color = 'black'
 
     if pic_number == 1:
-        rowlen = 28
+        rowlen = 35
         fontsize = 40
         loc = (50, 450)
         color = 'white'
 
     if pic_number == 2:
-        rowlen = 28
-        fontsize = 75
-        loc = (50, 50)
+        rowlen = 40
+        fontsize = 35
+        loc = (75, 75)
         color = 'black'
 
     if pic_number == 3:
-        rowlen = 28
-        fontsize = 75
-        loc = (50, 50)
+        rowlen = 40
+        fontsize = 35
+        loc = (75, 75)
         color = 'black'
 
     prepared_text = prepare_text(text, rowlen)
     if prepared_text[0] == ' ':
         prepared_text = prepared_text[1:]
     im = Image.open(pic_name)
-    font = ImageFont.truetype('DejaVuSerif.ttf', size=fontsize)
+    font = ImageFont.truetype(FONT_NAME, size=fontsize)
     draw_text = ImageDraw.Draw(im)
     draw_text.text(
         loc,
@@ -59,34 +63,37 @@ def write_wish(text: str, pic_number:int, pic_name: str, new_name: str):
 
 def write_from(text: str, pic_number:int, pic_name: str, new_name: str):
     if pic_number == 0:
-        rowlen = 20
-        fontsize = 50
-        loc = (1800, 1500)
+        #rowlen = 25
+        #fontsize = 50
+        #loc = (1800, 1500)
+        rowlen = 25
+        fontsize = 30
+        loc = (900, 800)
         color = 'black'
 
     if pic_number == 1:
-        rowlen = 20
+        rowlen = 25
         fontsize = 25
         loc = (50, 1020)
         color = 'black'
 
     if pic_number == 2:
         rowlen = 20
-        fontsize = 25
-        loc = (50, 500)
+        fontsize = 22
+        loc = (500, 970)
         color = 'black'
 
     if pic_number == 3:
-        rowlen = 20
-        fontsize = 25
-        loc = (50, 500)
+        rowlen = 25
+        fontsize = 22
+        loc = (50, 420)
         color = 'black'
 
     prepared_text = prepare_text(text, rowlen)
     if prepared_text[0] == ' ':
         prepared_text = prepared_text[1:]
     im = Image.open(pic_name)
-    font = ImageFont.truetype('DejaVuSerif.ttf', size=fontsize)
+    font = ImageFont.truetype(FONT_NAME, size=fontsize)
     draw_text = ImageDraw.Draw(im)
     draw_text.text(
         loc,

@@ -163,40 +163,40 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         logger.info(f'{chat_id} started generating postcard')
         if context.user_data[FOUND_WISHLIST][:6] == '8марта':
-            update.callback_query.bot.send_message(
-                chat_id=chat_id,
-                text='Открытки для этого вишлиста будут доступны только с 5го марта. Введите другой вишлист или нажмите /start',
-            )
-            #keyboard = [
-            #    [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_8MARCH_PIC1),
-            #     InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_8MARCH_PIC2)]
-            #]
-            #update.callback_query.bot.send_media_group(
-            #    chat_id=chat_id,
-            #    media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[2], 'rb')),
-            #           InputMediaPhoto(open(PICTURE_NAMES_DEMO[3], 'rb'))]
-            #)
             #update.callback_query.bot.send_message(
             #    chat_id=chat_id,
-            #    text=f'Выберите внешний вид открытки',
-            #    reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            #    parse_mode=ParseMode.HTML
+            #    text='Открытки для этого вишлиста будут доступны только с 5го марта. Введите другой вишлист или нажмите /start',
             #)
-        else:
             keyboard = [
-                [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
-                 InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2)]
+                [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_8MARCH_PIC1),
+                 InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_8MARCH_PIC2)]
             ]
-            update.callback_query.bot.send_media_group(
-                chat_id=chat_id,
-                media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[0], 'rb')),
-                       InputMediaPhoto(open(PICTURE_NAMES_DEMO[1], 'rb'))]
-            )
             update.callback_query.bot.send_message(
                 chat_id=chat_id,
                 text=f'Выберите внешний вид открытки',
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
                 parse_mode=ParseMode.HTML
+            )
+            update.callback_query.bot.send_media_group(
+                chat_id=chat_id,
+                media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[2], 'rb')),
+                       InputMediaPhoto(open(PICTURE_NAMES_DEMO[3], 'rb'))]
+            )
+        else:
+            keyboard = [
+                [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1),
+                 InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2)]
+            ]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Выберите внешний вид открытки',
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                parse_mode=ParseMode.HTML
+            )
+            update.callback_query.bot.send_media_group(
+                chat_id=chat_id,
+                media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[0], 'rb')),
+                       InputMediaPhoto(open(PICTURE_NAMES_DEMO[1], 'rb'))]
             )
 
     if init == CALLBACK_BUTTON_PIC1:
