@@ -92,6 +92,7 @@ def start_buttons_handler(update: Update, context: CallbackContext):
         reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
         parse_mode=ParseMode.MARKDOWN
     )
+    return ConversationHandler.END
 
 @debug_request
 def do_create(update: Update, context: CallbackContext):
@@ -414,7 +415,7 @@ def message_handler(update: Update, context: CallbackContext):
             update.message.reply_text('Неверный формат ввода')
 
     else:
-        if context.user_data[WISH_MODE] == 'True':
+        if (context.user_data[WISH_MODE] == 'True'):
             wishtext = text
             if len(wishtext) > WISH_LIMIT:
                 update.message.reply_text(
@@ -805,6 +806,7 @@ def main():
         },
         fallbacks=[
             CommandHandler('cancel', cancel_handler),
+            CommandHandler('start', start_buttons_handler),
         ],
     )
 
