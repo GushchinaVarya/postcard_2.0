@@ -316,7 +316,7 @@ def do_create(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
         logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
-        os.system("(rm -rf screen_" + str(chat_id) + ".png)")
+        os.system(f"(rm -rf {PIC_FOLDER+'screen_' + str(chat_id) + '.png'})")
         os.system(f"(rm -rf {PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         os.system(f"(rm -rf {PIC_FOLDER+'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         logger.info(f'all temporary data for {chat_id} was successfully deleted')
