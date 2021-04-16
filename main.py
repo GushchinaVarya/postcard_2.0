@@ -140,8 +140,8 @@ def do_create(update: Update, context: CallbackContext):
             )
             update.callback_query.bot.send_media_group(
                 chat_id=chat_id,
-                media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[2], 'rb')),
-                       InputMediaPhoto(open(PICTURE_NAMES_DEMO[3], 'rb'))]
+                media=[InputMediaPhoto(open(PIC_FOLDER+PICTURE_NAMES_DEMO[2], 'rb')),
+                       InputMediaPhoto(open(PIC_FOLDER+PICTURE_NAMES_DEMO[3], 'rb'))]
             )
         else:
             keyboard = [
@@ -156,8 +156,8 @@ def do_create(update: Update, context: CallbackContext):
             )
             update.callback_query.bot.send_media_group(
                 chat_id=chat_id,
-                media=[InputMediaPhoto(open(PICTURE_NAMES_DEMO[0], 'rb')),
-                       InputMediaPhoto(open(PICTURE_NAMES_DEMO[1], 'rb'))]
+                media=[InputMediaPhoto(open(PIC_FOLDER+PICTURE_NAMES_DEMO[0], 'rb')),
+                       InputMediaPhoto(open(PIC_FOLDER+PICTURE_NAMES_DEMO[1], 'rb'))]
             )
 
     if init == CALLBACK_BUTTON_PIC1:
@@ -226,7 +226,7 @@ def do_create(update: Update, context: CallbackContext):
             [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
             [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
         ]
-        pic_name = 'wish_' + str(chat_id) + '_' +PICTURE_NAMES[context.user_data[PIC_NUM]]
+        pic_name = PIC_FOLDER+'wish_' + str(chat_id) + '_' +PICTURE_NAMES[context.user_data[PIC_NUM]]
         update.callback_query.bot.sendPhoto(
             chat_id=chat_id,
             photo=open(pic_name, 'rb'),
@@ -254,10 +254,10 @@ def do_create(update: Update, context: CallbackContext):
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
         bot = update.callback_query.bot
-        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]):
-            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+        if os.path.exists(PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]):
+            pic_name = PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         else:
-            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+            pic_name = PIC_FOLDER+'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         bot.send_message(
             chat_id=wishlist_author_user_id,
             text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
@@ -277,8 +277,8 @@ def do_create(update: Update, context: CallbackContext):
             parse_mode=ParseMode.HTML
         )
         logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
-        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
-        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        os.system(f"(rm -rf {PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        os.system(f"(rm -rf {PIC_FOLDER+'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         logger.info(f'all temporary data for {chat_id} was successfully deleted')
 
     elif init == CALLBACK_BUTTON9_READY:
@@ -288,10 +288,10 @@ def do_create(update: Update, context: CallbackContext):
         wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
         wishlist_author_user_id = wishlist[0][0]
         wishlist_thanks_message = wishlist[0][9]
-        if os.path.exists('from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]):
-            pic_name = 'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+        if os.path.exists(PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]):
+            pic_name = PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         else:
-            pic_name = 'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+            pic_name = PIC_FOLDER+'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
         bot = update.callback_query.bot
         bot.send_message(
             chat_id=wishlist_author_user_id,
@@ -303,7 +303,7 @@ def do_create(update: Update, context: CallbackContext):
         )
         bot.sendPhoto(
             chat_id=wishlist_author_user_id,
-            photo=open('screen_' + str(chat_id) + '.png', 'rb'),
+            photo=open(PIC_FOLDER+'screen_' + str(chat_id) + '.png', 'rb'),
         )
         bot.send_message(
             chat_id=chat_id,
@@ -317,8 +317,8 @@ def do_create(update: Update, context: CallbackContext):
         )
         logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
         os.system("(rm -rf screen_" + str(chat_id) + ".png)")
-        os.system(f"(rm -rf {'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
-        os.system(f"(rm -rf {'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        os.system(f"(rm -rf {PIC_FOLDER+'from_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
+        os.system(f"(rm -rf {PIC_FOLDER+'wish_' + str(chat_id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]})")
         logger.info(f'all temporary data for {chat_id} was successfully deleted')
 
     elif init == CALLBACK_BUTTON10_DELETE_WISHLIST:
@@ -370,8 +370,8 @@ def message_handler(update: Update, context: CallbackContext):
                     [InlineKeyboardButton(BUTTON5_ANONYMOUS_SEND, callback_data=CALLBACK_BUTTON5_ANONYMOUS_SEND)],
                     [InlineKeyboardButton(BUTTON6_ADD_NAME, callback_data=CALLBACK_BUTTON6_ADD_NAME)],
                 ]
-                pic_name = 'wish_'+str(update.message.chat.id)+'_'+PICTURE_NAMES[context.user_data[PIC_NUM]]
-                write_wish(text=wishtext, pic_number=context.user_data[PIC_NUM], pic_name=PICTURE_NAMES[context.user_data[PIC_NUM]], new_name=pic_name)
+                pic_name = PIC_FOLDER+'wish_'+str(update.message.chat.id)+'_'+PICTURE_NAMES[context.user_data[PIC_NUM]]
+                write_wish(text=wishtext, pic_number=context.user_data[PIC_NUM], pic_name=PIC_FOLDER+PICTURE_NAMES[context.user_data[PIC_NUM]], new_name=pic_name)
                 context.bot.sendPhoto(
                     chat_id=update.message.chat.id,
                     photo=open(pic_name, 'rb'),
@@ -388,8 +388,8 @@ def message_handler(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
                 [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
             ]
-            pic_name_wish = 'wish_' + str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
-            pic_name = 'from_'+str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+            pic_name_wish = PIC_FOLDER+'wish_' + str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
+            pic_name = PIC_FOLDER+'from_'+str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
             write_from(text=from_whom, pic_number=context.user_data[PIC_NUM], pic_name=pic_name_wish, new_name=pic_name)
             context.bot.sendPhoto(
                 chat_id=update.message.chat.id,
@@ -419,7 +419,7 @@ def photo_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
-    name_screenshot = 'screen_'+str(update.message.chat.id)+'.png'
+    name_screenshot = PIC_FOLDER+'screen_'+str(update.message.chat.id)+'.png'
     photo_file = update.message.photo[-1].get_file()
     photo_file.download(name_screenshot)
     logger.info("Photo of %s", name_screenshot)
