@@ -12,57 +12,16 @@ from appearance_funtions import *
 from telegram import InputMediaPhoto, InputFile
 import numpy as np
 import pandas as pd
-import datetime
+
+from buttons import *
+from logger_debug import *
+from timer import alarm, remove_job_if_exists, set_timer_bday
+
+from admin_functions import notify_all_users_admin
 
 logger = getLogger(__name__)
 
 NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE, PIC_NUM, DELETE_MODE = range(18)
-
-
-BUTTON1_FIND = "Найти вишлист 🔎"
-BUTTON2_MAKE = "Создать вишлист 📝"
-BUTTON3_SHOW = "Показать все мои вишлисты ⚙️"
-BUTTON4_GENERATE_POSTCARD = "Сгенерировать открытку"
-BUTTON5_ANONYMOUS_SEND = "Отправить анонимно"
-BUTTON6_ADD_NAME = "Подписать открытку"
-BUTTON7_ADD_SCREENSHOT = "Добавить скриншот перевода"
-BUTTON8_NO_SCREENSHOT = "Отправить без скриншота"
-BUTTON9_READY = "Готово! Отправить автору вишлиста!"
-BUTTON10_DELETE_WISHLIST = "Удалить вишлист"
-
-CALLBACK_BUTTON1_FIND = "callback_button_find"
-CALLBACK_BUTTON2_MAKE = "callback_button_make"
-CALLBACK_BUTTON3_SHOW = "callback_button_show"
-CALLBACK_BUTTON4_GENERATE_POSTCARD = "callback_button_generate_postcard"
-CALLBACK_BUTTON5_ANONYMOUS_SEND = "callback_button_anonymous_send"
-CALLBACK_BUTTON6_ADD_NAME = "callback_button_add_name"
-CALLBACK_BUTTON7_ADD_SCREENSHOT = "callback_button_add_screenshot"
-CALLBACK_BUTTON8_NO_SCREENSHOT = "callback_button_no_screenshot"
-CALLBACK_BUTTON9_READY = "callback_button_ready"
-CALLBACK_BUTTON10_DELETE_WISHLIST = "callback_button_delete_wishlist"
-CALLBACK_BUTTON11_SAVE_WISHLIST = "callback_button_save_wishlist"
-
-BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
-
-BUTTON_PIC1 = "1"
-BUTTON_PIC2 = "2"
-
-CALLBACK_BUTTON_PIC1 = "callback_button_pic1"
-CALLBACK_BUTTON_PIC2 = "callback_button_pic2"
-
-CALLBACK_BUTTON_8MARCH_PIC1 = "callback_button_8march_pic1"
-CALLBACK_BUTTON_8MARCH_PIC2 = "callback_button_8march_pic2"
-
-
-def debug_request(f):
-    def inner(*args, **kwargs):
-        try:
-            logger.info(f"Обращение в функцию {f.__name__}")
-            return f(*args, **kwargs)
-        except:
-            logger.exception(f"Ошибка в разработчике {f.__name__}")
-            raise
-    return inner
 
 
 @debug_request
@@ -396,24 +355,6 @@ def message_handler(update: Update, context: CallbackContext):
                     text='Вишлист c таким именем не найден. Введите другой вишлист.',
                     reply_markup=ReplyKeyboardRemove()
                 )
-    elif text == "Нотификация для всех пользователей":
-        if update.message.chat.id == ADMIN_ID:
-            user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
-            for chat_id in user_id_df.user_id.values:
-                try:
-                    context.bot.send_message(
-                        chat_id=int(chat_id),
-                        text=UPDATE_TEXT,
-                        parse_mode=ParseMode.HTML,
-                        disable_notification=True
-                    )
-                    logger.info('notified chat_id: %s', chat_id)
-                except Unauthorized:
-                    logger.info('Unauthorized chat_id: %s', chat_id)
-                except:
-                    logger.info('Unknown ERROR chat_id: %s', chat_id)
-        else:
-            update.message.reply_text('Неверный формат ввода')
 
     else:
         if (context.user_data[WISH_MODE] == 'True'):
@@ -716,82 +657,6 @@ def cancel_handler(update: Update, context: CallbackContext) -> int:
     return ConversationHandler.END
 
 
-def alarm(context: CallbackContext):
-    keyboard = [
-        [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
-    ]
-    job = context.job
-    context.bot.send_message(
-        job.context,
-        text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
-        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-        parse_mode=ParseMode.MARKDOWN
-    )
-
-
-def remove_job_if_exists(name: str, context: CallbackContext) -> bool:
-    """Remove job with given name. Returns whether job was removed."""
-    current_jobs = context.job_queue.get_jobs_by_name(name)
-    if not current_jobs:
-        return False
-    for job in current_jobs:
-        job.schedule_removal()
-    return True
-
-
-def set_timer_bday(update: Update, context: CallbackContext) -> None:
-    """Add a job to the queue."""
-    keyboard = [
-        [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
-    ]
-    chat_id = update.message.chat_id
-    try:
-        # args[0] should contain the date format DD.MM for the timer in seconds
-        dateofbirth = context.args[0]
-        dayofbirth = int(dateofbirth.split('.')[0])
-        monthofbirth = int(dateofbirth.split('.')[1])
-        yearcurrent = datetime.datetime.today().year
-        if (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 0:
-            update.message.reply_text(
-                text='C днем рождения! Пришлашаем тебя создать вишлист!',
-                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            )
-            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, 12)
-        elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 1:
-            update.message.reply_text(
-                text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
-                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            )
-            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, 12)
-        elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days > 1:
-            due = datetime.datetime(yearcurrent, monthofbirth, dayofbirth, 12)
-            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за день до твоего дня рождения!\nВернуться в главное меню - /start')
-        else:
-            due = datetime.datetime(yearcurrent+1, monthofbirth, dayofbirth, 12)
-            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за день до твоего дня рождения!\nВернуться в главное меню - /start')
-
-        job_removed = remove_job_if_exists(str(chat_id), context)
-        context.job_queue.run_once(alarm, when=due, context=chat_id, name=str(chat_id))
-
-        user_id_df_bday = pd.read_csv(USER_IDS_FILE_BDAY, index_col=0)
-        if chat_id not in user_id_df_bday.user_id.values:
-            user_id_df_bday = user_id_df_bday.append(pd.DataFrame({'user_id': np.array([chat_id]), 'bday':np.array([dateofbirth])})).reset_index(drop=True)
-            user_id_df_bday.to_csv(USER_IDS_FILE_BDAY)
-            logger.info('added to file of users birthdays chat_id: %s', chat_id)
-        if chat_id in user_id_df_bday.user_id.values:
-            user_id_df_bday.loc[[user_id_df_bday[user_id_df_bday.user_id == chat_id].index[0]], ['bday']] = dateofbirth
-            user_id_df_bday.to_csv(USER_IDS_FILE_BDAY)
-            logger.info('updated file of users birthdays chat_id: %s', chat_id)
-
-        logger.info(f'{update.message.chat.id} successfully set timer')
-        if job_removed:
-            logger.info(f'old {update.message.chat.id} timer was removed')
-
-    except (IndexError, ValueError):
-        update.message.reply_text('Usage: /mybday <DD.MM>')
-
-
-
 @debug_request
 def about(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
@@ -894,6 +759,7 @@ def main():
     updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
     updater.dispatcher.add_handler(MessageHandler(Filters.photo, photo_handler))
     updater.dispatcher.add_handler(CommandHandler('mybday', set_timer_bday))
+    updater.dispatcher.add_handler(CommandHandler('notify_all_users', notify_all_users_admin))
 
     updater.start_polling()
     updater.idle()
