@@ -17,7 +17,7 @@ from buttons import *
 from logger_debug import *
 from timer import alarm, remove_job_if_exists, set_timer_bday
 
-from admin_functions import notify_all_users_admin
+from admin_functions import *
 
 logger = getLogger(__name__)
 
@@ -680,6 +680,8 @@ def about(update: Update, context: CallbackContext):
 Большое спасибо художникам [66hellena66](https://www.instagram.com/66hellena66/) и [Студия логотипов Станислава Гора](http://logotype.su)
 Телеграм создателей бота - [@neverending_why](@neverending_why). Вы можете написать нам если увидели ошибку или хотите что-то улучшить в работе бота. Мы рады любым предложениям и замечаниям.🤍
 
+[Тест](https://telegra.ph/Testovaya-statya-04-27)
+
 *Выберите режим:*
 ''',
         reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
@@ -759,7 +761,9 @@ def main():
     updater.dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
     updater.dispatcher.add_handler(MessageHandler(Filters.photo, photo_handler))
     updater.dispatcher.add_handler(CommandHandler('mybday', set_timer_bday))
+    updater.dispatcher.add_handler(CommandHandler('stopreminder', remove_timer_bday))
     updater.dispatcher.add_handler(CommandHandler('notify_all_users', notify_all_users_admin))
+    updater.dispatcher.add_handler(CommandHandler('reset_all_timers', reset_all_timers_admin))
 
     updater.start_polling()
     updater.idle()

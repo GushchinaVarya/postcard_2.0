@@ -19,8 +19,7 @@ def alarm(context: CallbackContext):
     context.bot.send_message(
         job.context,
         text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
-        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-        parse_mode=ParseMode.MARKDOWN
+        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True)
     )
     logger.info(f'successfully set timer for {job.context}. Now is {str(datetime.datetime.today())}')
 
@@ -47,24 +46,36 @@ def set_timer_bday(update: Update, context: CallbackContext) -> None:
         dayofbirth = int(dateofbirth.split('.')[0])
         monthofbirth = int(dateofbirth.split('.')[1])
         yearcurrent = datetime.datetime.today().year
-        if (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 0:
+
+        if (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days < 0:
+            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
+            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за 2 дня до твоего дня рождения!\nУдалить напоминание - /stopreminder\nВернуться в главное меню - /start')
+        elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 0:
             update.message.reply_text(
                 text='C днем рождения! Пришлашаем тебя создать вишлист!',
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
-            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER)
+            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
         elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 1:
             update.message.reply_text(
                 text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
-            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER)
-        elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days > 1:
+            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
+        elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 2:
+            update.message.reply_text(
+                text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+            )
+            due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
+
+        elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days > 2:
             due = datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
-            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за 2 дня до твоего дня рождения!\nВернуться в главное меню - /start')
+            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за 2 дня до твоего дня рождения!\nУдалить напоминание - /stopreminder\nВернуться в главное меню - /start')
         else:
+            logger.info(f'!!!!warning!!!! setting timer for chat_id {chat_id} with birthday {dateofbirth}. Now is {str(datetime.datetime.today())}')
             due = datetime.datetime(yearcurrent+1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
-            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за 2 дня до твоего дня рождения!\nВернуться в главное меню - /start')
+            update.message.reply_text('Спасибо! Мы напомним тебе о создании вишлиста за 2 дня до твоего дня рождения!\nУдалить напоминание - /stopreminder\nВернуться в главное меню - /start')
 
         job_removed = remove_job_if_exists(str(chat_id), context)
         context.job_queue.run_once(alarm, when=due, context=chat_id, name=str(chat_id))
@@ -84,4 +95,23 @@ def set_timer_bday(update: Update, context: CallbackContext) -> None:
             logger.info(f'old {update.message.chat.id} timer was removed')
 
     except (IndexError, ValueError):
-        update.message.reply_text('Usage: /mybday <DD.MM>')
+        update.message.reply_text('Формат ввода: /mybday <DD.MM>')
+
+
+
+@debug_request
+def remove_timer_bday(update: Update, context: CallbackContext) -> None:
+    """Remove reminder from file."""
+    chat_id = update.message.chat_id
+    user_id_df_bday = pd.read_csv(USER_IDS_FILE_BDAY, index_col=0)
+    if chat_id not in user_id_df_bday.user_id.values:
+        update.message.reply_text('Вы не создавали напоминание о создании вишлиста.\nСоздать напоминание - /mybday DD.MM\nВернуться в главное меню - /start')
+    else:
+        user_id_df_bday = user_id_df_bday.drop(user_id_df_bday[user_id_df_bday['user_id'] == chat_id].index).reset_index(drop=True)
+        user_id_df_bday.to_csv(USER_IDS_FILE_BDAY)
+        logger.info(f'removed {chat_id} from file of users birthdays')
+        update.message.reply_text('Вы успешно удалили ваш день рождения из базы напоминаний.\nСоздать новое напоминание - /mybday DD.MM\nВернуться в главное меню - /start')
+
+    job_removed = remove_job_if_exists(str(chat_id), context)
+    if job_removed:
+        logger.info(f'old {update.message.chat.id} timer was removed')
