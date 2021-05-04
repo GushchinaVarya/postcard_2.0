@@ -6,18 +6,13 @@ from telegram.error import Unauthorized
 from telegram.utils.request import Request
 from config import *
 from db import *
-from picture import write_wish, write_from
+from picture import write_wish, write_from, write_text_2
 import os
 from appearance_funtions import *
 from telegram import InputMediaPhoto, InputFile
-import numpy as np
-import pandas as pd
-
-from buttons import *
-from logger_debug import *
-from timer import alarm, remove_job_if_exists, set_timer_bday
 
 from admin_functions import *
+from pic_config import PIC_INFO, PIC_FOLDER
 
 logger = getLogger(__name__)
 
@@ -85,11 +80,21 @@ def do_create(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(BUTTON10_DELETE_WISHLIST, callback_data=CALLBACK_BUTTON10_DELETE_WISHLIST)],
             ]
             for wishlist_i in wishlists:
+                n_founds = wishlist_i[10]
+                welcome_speech = wishlist_i[2]
+                name = wishlist_i[1]
+                foundation0 = wishlist_i[3]
+                foundation1 = wishlist_i[5]
+                foundation2 = wishlist_i[7]
+                wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, chat_id)
+
                 update.callback_query.bot.send_message(
                     chat_id=chat_id,
-                    text=print_wishlist_with_thanks(wishlist_i),
-                    parse_mode=ParseMode.HTML,
-                    disable_web_page_preview=True
+                    text=name
+                )
+                update.callback_query.bot.sendPhoto(
+                    chat_id=chat_id,
+                    photo=open(wishlist_pic_name, 'rb'),
                 )
             update.callback_query.bot.send_message(
                 chat_id=chat_id,
@@ -100,6 +105,11 @@ def do_create(update: Update, context: CallbackContext):
                 disable_web_page_preview=True,
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
+            os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(chat_id) + '_' + PIC_INFO['3']['pic_name']})")
+            os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(chat_id) + '_' + PIC_INFO['4']['pic_name']})")
+            os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(chat_id) + '_' + PIC_INFO['5']['pic_name']})")
+            logger.info(f'all temporary data for {chat_id} was successfully deleted')
+
     if init == CALLBACK_BUTTON2_MAKE:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
@@ -635,9 +645,28 @@ def finish_creating_handler(update: Update, context: CallbackContext):
         chat_id=update.callback_query.message.chat.id,
         text=f'''
 Вишлист сохранен✔️
-Отправьте вашим друзьям тег #{name}, и они смогут с помощью данного бота найти ваш вишлист и отправить вам открытку.
+Отправьте друзьям тег #{name} и ссылку на бота https://t.me/MoreThanPostcardBot
+Либо поделитесь этой картинкой в соцсетях.
+''',
+        reply_markup=ReplyKeyboardRemove(),
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True
+    )
 
-Чтобы найти или создать вишлист нажмите /start''',
+    # БЛОК СОЗДАНИЯ КАРТИНКИ
+    wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, user.id)
+    update.callback_query.bot.sendPhoto(
+        chat_id=user.id,
+        photo=open(wishlist_pic_name, 'rb'),
+    )
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['3']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['4']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['5']['pic_name']})")
+    logger.info(f'all temporary data for {user.id} was successfully deleted')
+
+    update.callback_query.bot.send_message(
+        chat_id=user.id,
+        text='\nЧтобы найти или создать вишлист нажмите /start',
         reply_markup=ReplyKeyboardRemove(),
         parse_mode=ParseMode.HTML
     )
@@ -751,7 +780,7 @@ def main():
         },
         fallbacks=[
             CommandHandler('cancel', cancel_handler),
-            CommandHandler('start', start_buttons_handler),
+            CommandHandler('start', start_buttons_handler)
         ],
     )
 

@@ -1,3 +1,10 @@
+from pic_config import PIC_INFO, PIC_FOLDER
+from picture import write_text_2
+
+from logger_debug import *
+logger = getLogger(__name__)
+
+@debug_request
 def print_wishlist(wishlist):
     n_founds = wishlist[10]
     if n_founds == 1:
@@ -26,11 +33,12 @@ def print_wishlist(wishlist):
 Как пожертвовать: {wishlist[8]}\n'''
     return print_result
 
+@debug_request
 def print_wishlist_with_thanks(wishlist_i):
     print_result = print_wishlist(wishlist_i)+f'\n\n<i>Сообщение которое друзья увидят только после отправки открытки:</i> {wishlist_i[9]}\n'
     return print_result
 
-
+@debug_request
 def print_1_fund(name: str, welcome_speech: str, foundation0: str, method0: str, thanks_speech:str):
     print_result = f'''
 Ваш вишлист выглядит вот так:\n
@@ -42,6 +50,7 @@ def print_1_fund(name: str, welcome_speech: str, foundation0: str, method0: str,
 '''
     return print_result
 
+@debug_request
 def print_2_funds(name: str, welcome_speech: str, foundation0: str, method0: str, foundation1: str, method1: str, thanks_speech:str):
     print_result = f'''
 Ваш вишлист выглядит вот так:\n
@@ -55,6 +64,7 @@ def print_2_funds(name: str, welcome_speech: str, foundation0: str, method0: str
 '''
     return print_result
 
+@debug_request
 def print_3_funds(name: str, welcome_speech: str, foundation0: str, method0: str, foundation1: str, method1: str, foundation2: str, method2: str, thanks_speech:str):
     print_result = f'''
 Ваш вишлист выглядит вот так:\n
@@ -69,3 +79,26 @@ def print_3_funds(name: str, welcome_speech: str, foundation0: str, method0: str
 <i>Сообщение которое друзья увидят только после отправки открытки:</i> {thanks_speech}\n
 '''
     return print_result
+
+@debug_request
+def print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, user_id):
+    discl = f'Чтобы пожертвовать и отправить мне открытку введите #{name} в telegtam-боте "Вместо Открытки"\n@MoreThanPostcardBot'
+    if n_founds == 1:
+        write_text_2(welcome_speech, 3, user_id, 'author')
+        write_text_2(discl, 3, user_id, 'discl')
+        write_text_2(foundation0, 3, user_id, 'fund1')
+        wishlist_pic_name = PIC_FOLDER+'fund1_'+str(user_id)+'_'+PIC_INFO['3']['pic_name']
+    if n_founds == 2:
+        write_text_2(welcome_speech, 4, user_id, 'author')
+        write_text_2(discl, 4, user_id, 'discl')
+        write_text_2(foundation0, 4, user_id, 'fund1')
+        write_text_2(foundation1, 4, user_id, 'fund2')
+        wishlist_pic_name = PIC_FOLDER+'fund2_' + str(user_id) + '_' + PIC_INFO['4']['pic_name']
+    if n_founds == 3:
+        write_text_2(welcome_speech, 5, user_id, 'author')
+        write_text_2(discl, 5, user_id, 'discl')
+        write_text_2(foundation0, 5, user_id, 'fund1')
+        write_text_2(foundation1, 5, user_id, 'fund2')
+        write_text_2(foundation2, 5, user_id, 'fund3')
+        wishlist_pic_name = PIC_FOLDER+'fund3_' + str(user_id) + '_' + PIC_INFO['5']['pic_name']
+    return wishlist_pic_name
