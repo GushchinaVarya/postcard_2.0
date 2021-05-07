@@ -23,11 +23,15 @@ CALLBACK_BUTTON11_SAVE_WISHLIST = "callback_button_save_wishlist"
 
 BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
 
-BUTTON_PIC1 = "1"
-BUTTON_PIC2 = "2"
+BUTTON_PIC0 = "1"
+BUTTON_PIC1 = "2"
+BUTTON_PIC2 = "3"
+BUTTON_PIC3 = "4"
 
-CALLBACK_BUTTON_PIC1 = "callback_button_pic1"
-CALLBACK_BUTTON_PIC2 = "callback_button_pic2"
+CALLBACK_BUTTON_PIC0 = "callback_button_pic1"
+CALLBACK_BUTTON_PIC1 = "callback_button_pic2"
+CALLBACK_BUTTON_PIC2 = "callback_button_pic3"
+CALLBACK_BUTTON_PIC3 = "callback_button_pic4"
 
 CALLBACK_BUTTON_8MARCH_PIC1 = "callback_button_8march_pic1"
 CALLBACK_BUTTON_8MARCH_PIC2 = "callback_button_8march_pic2"

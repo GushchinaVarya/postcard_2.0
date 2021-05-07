@@ -122,25 +122,43 @@ def prepare_text_2(text: str, pic_number:int, type:str):
     arrwords = text.split(' ')
     prepared_text = ''
     current_rowlen = 0
+    max_rowlen = 0
+    nrows = 1
     for word in arrwords:
         if current_rowlen == 0:
             prepared_text = prepared_text + word
             current_rowlen = current_rowlen + len(word) + 1
+            if max_rowlen < current_rowlen:
+                max_rowlen = current_rowlen
         elif current_rowlen + len(word) + 1 <= max_width:
             prepared_text = prepared_text+' '+word
             current_rowlen = current_rowlen + len(word) + 1
+            if max_rowlen < current_rowlen:
+                max_rowlen = current_rowlen
         else:
             prepared_text = prepared_text + '\n' + word
+            nrows = nrows + 1
             current_rowlen = len(word)
-    return prepared_text, fontsize, i
+            if max_rowlen < current_rowlen:
+                max_rowlen = current_rowlen
+    return prepared_text, fontsize, i, max_rowlen, nrows
 
+@debug_request
+def calculate_loc_from(loc, max_rowlen, fontsize, nrows):
+    loc_0_new = int(loc[0] - max_rowlen*fontsize*0.5)
+    loc_1_new = int(loc[1] - nrows*fontsize*0.5)
+    return (loc_0_new, loc_1_new)
 
 @debug_request
 def write_text_2(text: str, pic_number:int, user_id: int, type:str):
     assert (type in ['wish', 'from', 'author', 'fund1', 'fund2', 'fund3', 'discl']), 'unknown type'
     prepared_text = prepare_text_2(text, pic_number, type)[0]
     fontsize = prepare_text_2(text, pic_number, type)[1]
+    max_rowlen = prepare_text_2(text, pic_number, type)[3]
+    nrows = prepare_text_2(text, pic_number, type)[4]
     loc = PIC_INFO[str(pic_number)]['loc_'+type]
+    if type == 'from':
+        loc = calculate_loc_from(loc, max_rowlen, fontsize, nrows)
     color = PIC_INFO[str(pic_number)]['color_'+type]
     if prepared_text[0] == ' ':
         prepared_text = prepared_text[1:]

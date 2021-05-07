@@ -84,21 +84,24 @@ def print_3_funds(name: str, welcome_speech: str, foundation0: str, method0: str
 def print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, user_id):
     discl = f'Чтобы пожертвовать и отправить мне открытку введите #{name} в telegtam-боте "Вместо Открытки"\n@MoreThanPostcardBot'
     if n_founds == 1:
-        write_text_2(welcome_speech, 3, user_id, 'author')
-        write_text_2(discl, 3, user_id, 'discl')
-        write_text_2(foundation0, 3, user_id, 'fund1')
-        wishlist_pic_name = PIC_FOLDER+'fund1_'+str(user_id)+'_'+PIC_INFO['3']['pic_name']
+        pic_num = 4
+        write_text_2(welcome_speech, pic_num, user_id, 'author')
+        write_text_2(discl, pic_num, user_id, 'discl')
+        write_text_2(foundation0, pic_num, user_id, 'fund1')
+        wishlist_pic_name = PIC_FOLDER+'fund1_'+str(user_id)+'_'+PIC_INFO[str(pic_num)]['pic_name']
     if n_founds == 2:
-        write_text_2(welcome_speech, 4, user_id, 'author')
-        write_text_2(discl, 4, user_id, 'discl')
-        write_text_2(foundation0, 4, user_id, 'fund1')
-        write_text_2(foundation1, 4, user_id, 'fund2')
-        wishlist_pic_name = PIC_FOLDER+'fund2_' + str(user_id) + '_' + PIC_INFO['4']['pic_name']
+        pic_num = 5
+        write_text_2(welcome_speech, pic_num, user_id, 'author')
+        write_text_2(discl, pic_num, user_id, 'discl')
+        write_text_2(foundation0, pic_num, user_id, 'fund1')
+        write_text_2(foundation1, pic_num, user_id, 'fund2')
+        wishlist_pic_name = PIC_FOLDER+'fund2_' + str(user_id) + '_' + PIC_INFO[str(pic_num)]['pic_name']
     if n_founds == 3:
-        write_text_2(welcome_speech, 5, user_id, 'author')
-        write_text_2(discl, 5, user_id, 'discl')
-        write_text_2(foundation0, 5, user_id, 'fund1')
-        write_text_2(foundation1, 5, user_id, 'fund2')
-        write_text_2(foundation2, 5, user_id, 'fund3')
-        wishlist_pic_name = PIC_FOLDER+'fund3_' + str(user_id) + '_' + PIC_INFO['5']['pic_name']
+        pic_num = 6
+        write_text_2(welcome_speech, pic_num, user_id, 'author')
+        write_text_2(discl, pic_num, user_id, 'discl')
+        write_text_2(foundation0, pic_num, user_id, 'fund1')
+        write_text_2(foundation1, pic_num, user_id, 'fund2')
+        write_text_2(foundation2, pic_num, user_id, 'fund3')
+        wishlist_pic_name = PIC_FOLDER+'fund3_' + str(user_id) + '_' + PIC_INFO[str(pic_num)]['pic_name']
     return wishlist_pic_name
