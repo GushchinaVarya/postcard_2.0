@@ -86,12 +86,14 @@ def print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, fou
     if n_founds == 1:
         pic_num = 4
         write_text_2(welcome_speech, pic_num, user_id, 'author')
+        write_text_2(f'#{name}', pic_num, user_id, 'tag')
         write_text_2(discl, pic_num, user_id, 'discl')
         write_text_2(foundation0, pic_num, user_id, 'fund1')
         wishlist_pic_name = PIC_FOLDER+'fund1_'+str(user_id)+'_'+PIC_INFO[str(pic_num)]['pic_name']
     if n_founds == 2:
         pic_num = 5
         write_text_2(welcome_speech, pic_num, user_id, 'author')
+        write_text_2(f'#{name}', pic_num, user_id, 'tag')
         write_text_2(discl, pic_num, user_id, 'discl')
         write_text_2(foundation0, pic_num, user_id, 'fund1')
         write_text_2(foundation1, pic_num, user_id, 'fund2')
@@ -99,6 +101,7 @@ def print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, fou
     if n_founds == 3:
         pic_num = 6
         write_text_2(welcome_speech, pic_num, user_id, 'author')
+        write_text_2(f'#{name}', pic_num, user_id, 'tag')
         write_text_2(discl, pic_num, user_id, 'discl')
         write_text_2(foundation0, pic_num, user_id, 'fund1')
         write_text_2(foundation1, pic_num, user_id, 'fund2')

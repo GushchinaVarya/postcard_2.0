@@ -112,7 +112,7 @@ def write_from(text: str, pic_number:int, pic_name: str, new_name: str):
 
 @debug_request
 def prepare_text_2(text: str, pic_number:int, type:str):
-    assert (type in ['wish', 'from', 'author', 'fund1', 'fund2', 'fund3', 'discl']), 'unknown type'
+    assert (type in ['wish', 'from', 'author', 'fund1', 'fund2', 'fund3', 'discl', 'tag']), 'unknown type'
     textlen= len(text)
     i = 0
     while PIC_INFO[str(pic_number)]['lenths_'+type][i] < textlen:
@@ -151,7 +151,7 @@ def calculate_loc_from(loc, max_rowlen, fontsize, nrows):
 
 @debug_request
 def write_text_2(text: str, pic_number:int, user_id: int, type:str):
-    assert (type in ['wish', 'from', 'author', 'fund1', 'fund2', 'fund3', 'discl']), 'unknown type'
+    assert (type in ['wish', 'from', 'author', 'fund1', 'fund2', 'fund3', 'discl', 'tag']), 'unknown type'
     prepared_text = prepare_text_2(text, pic_number, type)[0]
     fontsize = prepare_text_2(text, pic_number, type)[1]
     max_rowlen = prepare_text_2(text, pic_number, type)[3]
@@ -168,8 +168,10 @@ def write_text_2(text: str, pic_number:int, user_id: int, type:str):
         pic_name = PIC_FOLDER+'wish_'+str(user_id)+'_'+PIC_INFO[str(pic_number)]['pic_name']
     elif type == 'author':
         pic_name = PIC_FOLDER+PIC_INFO[str(pic_number)]['pic_name']
-    elif type == 'discl':
+    elif type == 'tag':
         pic_name = PIC_FOLDER+'author_'+str(user_id)+'_'+PIC_INFO[str(pic_number)]['pic_name']
+    elif type == 'discl':
+        pic_name = PIC_FOLDER+'tag_'+str(user_id)+'_'+PIC_INFO[str(pic_number)]['pic_name']
     elif type == 'fund1':
         pic_name = PIC_FOLDER+'discl_'+str(user_id)+'_'+PIC_INFO[str(pic_number)]['pic_name']
     elif type == 'fund2':
@@ -187,6 +189,3 @@ def write_text_2(text: str, pic_number:int, user_id: int, type:str):
         font=font
         )
     im.save(PIC_FOLDER+type+'_'+str(user_id)+'_'+PIC_INFO[str(pic_number)]['pic_name'])
-
-if __name__ == '__main__':
-    print(prepare_text('Я классный у бабущки и мноно денег и я хочу много денег и надо делать презентация', 30))
