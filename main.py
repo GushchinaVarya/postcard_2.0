@@ -154,6 +154,10 @@ def do_create(update: Update, context: CallbackContext):
             [InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2),
              InlineKeyboardButton(BUTTON_PIC3, callback_data=CALLBACK_BUTTON_PIC3)]
         ]
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text='⏳Готовим варианты открыток...',
+        )
         context.bot.sendPhoto(
             chat_id=chat_id,
             photo=open(PIC_FOLDER + PICTURE_NAMES_DEMO[0], 'rb'),
@@ -373,8 +377,11 @@ def message_handler(update: Update, context: CallbackContext):
     text = update.message.text
     user_id = update.message.chat.id
     if text[0] == '#':
-        if context.user_data[DELETE_MODE] == 'True':
-            update.message.reply_text('Чтобы удалить вишлист введите его название без # . Вернуться в главное меню - /start')
+        try:
+            if context.user_data[DELETE_MODE] == 'True':
+                update.message.reply_text('Чтобы удалить вишлист введите его название без # . Вернуться в главное меню - /start')
+        except:
+            update.message.reply_text('Я кажется забыл о чем мы говорили. Пожалуйста нажмите /start')
         else:
             wishlistname = text[1:]
             wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
@@ -738,8 +745,6 @@ def about(update: Update, context: CallbackContext):
 
 Большое спасибо художникам [66hellena66](https://www.instagram.com/66hellena66/) и [Студия логотипов Станислава Гора](http://logotype.su)
 Телеграм создателей бота - [@neverending_why](@neverending_why). Вы можете написать нам если увидели ошибку или хотите что-то улучшить в работе бота. Мы рады любым предложениям и замечаниям.🤍
-
-[Тест](https://telegra.ph/Testovaya-statya-04-27)
 
 *Выберите режим:*
 ''',

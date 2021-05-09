@@ -82,7 +82,7 @@ def print_3_funds(name: str, welcome_speech: str, foundation0: str, method0: str
 
 @debug_request
 def print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, user_id):
-    discl = f'Чтобы пожертвовать и отправить мне открытку введите #{name} в telegtam-боте "Вместо Открытки"\n@MoreThanPostcardBot'
+    discl = f'Чтобы пожертвовать и отправить мне открытку введите #{name} в telegtam-боте "Вместо Открытки"'
     if n_founds == 1:
         pic_num = 4
         write_text_2(welcome_speech, pic_num, user_id, 'author')
