@@ -154,7 +154,7 @@ def do_create(update: Update, context: CallbackContext):
             [InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2),
              InlineKeyboardButton(BUTTON_PIC3, callback_data=CALLBACK_BUTTON_PIC3)]
         ]
-        update.callback_query.bot.send_message(
+        message_to_del = context.bot.send_message(
             chat_id=chat_id,
             text='⏳Готовим варианты открыток...',
         )
@@ -162,19 +162,20 @@ def do_create(update: Update, context: CallbackContext):
             chat_id=chat_id,
             photo=open(PIC_FOLDER + PICTURE_NAMES_DEMO[0], 'rb'),
         )
-        #update.callback_query.bot.send_media_group(
-        #    chat_id=chat_id,
-        #    media=[InputMediaPhoto(open(PIC_FOLDER + PICTURE_NAMES_DEMO[0], 'rb')),
-        #           InputMediaPhoto(open(PIC_FOLDER + PICTURE_NAMES_DEMO[1], 'rb')),
-        #           InputMediaPhoto(open(PIC_FOLDER + PICTURE_NAMES_DEMO[2], 'rb')),
-        #           InputMediaPhoto(open(PIC_FOLDER + PICTURE_NAMES_DEMO[3], 'rb'))]
-        #)
+        delete_flag = 0
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f'Выберите внешний вид открытки',
             reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             parse_mode=ParseMode.HTML
         )
+        delete_flag = 1
+        if delete_flag == 1:
+            context.bot.delete_message(
+                chat_id=chat_id,
+                message_id=message_to_del.message_id
+            )
+
 
     if init == CALLBACK_BUTTON_PIC0:
         context.user_data[WISH_MODE] = 'True'
@@ -602,17 +603,98 @@ def skip(update: Update, context: CallbackContext) -> int:
     )
     return THANKS_SPEECH
 
+@debug_request
 def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
-    context.user_data[THANKS_SPEECH] = update.message.text
+    context.user_data[WISH_MODE] = 'False'
+    context.user_data[FROM_MODE] = 'False'
+    context.user_data[DELETE_MODE] = 'False'
+    user = update.effective_user
+
+    update.message.reply_text(
+        text=f"Поздравляем! Вы создали вишлист!",
+        parse_mode=ParseMode.HTML,
+    )
+
+    message_to_del = context.bot.send_message(
+        chat_id=int(user.id),
+        text=f"⏳Готовим красивую картинку с вашим вишлистом...",
+        parse_mode=ParseMode.HTML
+    )
+
+    delete_flag = 0
+
+    logger.info(f'message id{message_to_del.message_id}')
+
+
     name = context.user_data[NAME]
     n_founds = context.user_data[N_FOUNDS]
-    logger.info("User %s wants to skip other funds.", context.user_data)
-    #keyboard = [[KeyboardButton(BUTTON_SAVE_WISHLIST)]]
-    keyboard = [[InlineKeyboardButton(BUTTON_SAVE_WISHLIST, callback_data=CALLBACK_BUTTON11_SAVE_WISHLIST)]]
-    welcome_speech = context.user_data[WELCOME_SPEECH]
-    thanks_speech = context.user_data[THANKS_SPEECH]
     foundation0 = context.user_data[FOUNDATION_0]
     method0 = context.user_data[METHOD_0]
+    welcome_speech = context.user_data[WELCOME_SPEECH]
+    thanks_speech = update.message.text
+    if n_founds == 1:
+        foundation1 = 'None'
+        method1 = 'None'
+        foundation2 = 'None'
+        method2 = 'None'
+    if n_founds == 2:
+        foundation1 = context.user_data[FOUNDATION_1]
+        method1 = context.user_data[METHOD_1]
+        foundation2 = 'None'
+        method2 = 'None'
+    if n_founds == 3:
+        foundation1 = context.user_data[FOUNDATION_1]
+        method1 = context.user_data[METHOD_1]
+        foundation2 = context.user_data[FOUNDATION_2]
+        method2 = context.user_data[METHOD_2]
+    if name:
+        if foundation0:
+            if method0:
+                add_message(
+                    user_id=user.id,
+                    name=name,
+                    namelowreg=name.lower(),
+                    welcome_speech=welcome_speech,
+                    foundation0=foundation0,
+                    method0=method0,
+                    foundation1=foundation1,
+                    method1=method1,
+                    foundation2=foundation2,
+                    method2=method2,
+                    thanks_speech=thanks_speech,
+                    n_founds=n_founds
+                )
+
+    # БЛОК СОЗДАНИЯ КАРТИНКИ
+    wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1,
+                                                    foundation2, int(user.id))
+    context.bot.sendPhoto(
+        chat_id=int(user.id),
+        photo=open(wishlist_pic_name, 'rb'),
+    )
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['4']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['5']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['6']['pic_name']})")
+    logger.info(f'all temporary data for {user.id} was successfully deleted')
+
+    delete_flag = 1
+
+    if delete_flag == 1:
+        context.bot.delete_message(
+            chat_id=int(user.id),
+            message_id=message_to_del.message_id
+        )
+
+    update.message.reply_text(
+            text=f'''
+Отправьте друзьям тег #{name} и ссылку на бота https://t.me/MoreThanPostcardBot
+Либо поделитесь этой картинкой в соцсетях.
+    ''',
+            reply_markup=ReplyKeyboardRemove(),
+            parse_mode=ParseMode.HTML,
+            disable_web_page_preview=True
+        )
+
     if n_founds == 1:
         reply_text = print_1_fund(name, welcome_speech, foundation0, method0, thanks_speech)
     if n_founds == 2:
@@ -626,8 +708,7 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
         method2 = context.user_data[METHOD_2]
         reply_text = print_3_funds(name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech)
     update.message.reply_text(
-        text=f"{reply_text}\nЕсли все верно нажмите <b>Сохранить вишлист</b>. Для отмены - /cancel",
-        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+        text=f"{reply_text}",
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True
     )
@@ -808,10 +889,10 @@ def main():
             ],
             THANKS_SPEECH: [
                 MessageHandler(Filters.text, thanks_speech_handler, pass_user_data=True),
-            ],
-            CONFIRM: [
-                CallbackQueryHandler(finish_creating_handler, pass_user_data=True),
-            ]
+            ]#,
+            #CONFIRM: [
+            #    CallbackQueryHandler(finish_creating_handler, pass_user_data=True),
+            #]
         },
         fallbacks=[
             CommandHandler('cancel', cancel_handler),
