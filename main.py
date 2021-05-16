@@ -86,7 +86,7 @@ def do_create(update: Update, context: CallbackContext):
                 foundation0 = wishlist_i[3]
                 foundation1 = wishlist_i[5]
                 foundation2 = wishlist_i[7]
-                wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, chat_id)
+                wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, chat_id, picstyle='dark')
                 update.callback_query.bot.send_message(
                     chat_id=chat_id,
                     text=name
@@ -391,7 +391,7 @@ def message_handler(update: Update, context: CallbackContext):
                 keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
                 reply_text = print_wishlist(wishlist[0])
                 update.message.reply_text(
-                    text=f'Вишлист найден!✔️\n\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                    text=f'Вишлист <b>{wishlist[0][1]}</b> найден!✔️\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
                     reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
                     parse_mode=ParseMode.HTML,
                     disable_web_page_preview=True
@@ -622,9 +622,7 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
     )
 
     delete_flag = 0
-
-    logger.info(f'message id{message_to_del.message_id}')
-
+    logger.info(f'delteflag={delete_flag}, message id{message_to_del.message_id}')
 
     name = context.user_data[NAME]
     n_founds = context.user_data[N_FOUNDS]
@@ -666,19 +664,28 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
                 )
 
     # БЛОК СОЗДАНИЯ КАРТИНКИ
-    wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1,
-                                                    foundation2, int(user.id))
-    context.bot.sendPhoto(
-        chat_id=int(user.id),
-        photo=open(wishlist_pic_name, 'rb'),
+    wishlist_pic_name_white = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1,
+                                                          foundation2, user.id, picstyle='dark')
+    wishlist_pic_name_dark = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1,
+                                                         foundation2, user.id, picstyle='white')
+    context.bot.send_media_group(
+        chat_id=user.id,
+        media=[InputMediaPhoto(open(wishlist_pic_name_white, 'rb')),
+               InputMediaPhoto(open(wishlist_pic_name_dark, 'rb'))]
     )
+    #context.bot.sendPhoto(
+    #    chat_id=int(user.id),
+    #    photo=open(wishlist_pic_name, 'rb'),
+    #)
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['4']['pic_name']})")
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['5']['pic_name']})")
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['6']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['7']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['8']['pic_name']})")
+    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['9']['pic_name']})")
     logger.info(f'all temporary data for {user.id} was successfully deleted')
 
     delete_flag = 1
-
     if delete_flag == 1:
         context.bot.delete_message(
             chat_id=int(user.id),
@@ -687,8 +694,8 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
 
     update.message.reply_text(
             text=f'''
-Отправьте друзьям тег #{name} и ссылку на бота https://t.me/MoreThanPostcardBot
-Либо поделитесь этой картинкой в соцсетях.
+<b>Отправьте друзьям тег #{name} и ссылку на бота https://t.me/MoreThanPostcardBot
+Либо поделитесь любой из этих картинок в соцсетях. </b>
     ''',
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML,
@@ -772,11 +779,10 @@ def finish_creating_handler(update: Update, context: CallbackContext):
     )
 
     # БЛОК СОЗДАНИЯ КАРТИНКИ
-    wishlist_pic_name = print_wishlist_as_a_picture(n_founds, welcome_speech, name, foundation0, foundation1, foundation2, user.id)
-    update.callback_query.bot.sendPhoto(
-        chat_id=user.id,
-        photo=open(wishlist_pic_name, 'rb'),
-    )
+    #    update.callback_query.bot.sendPhoto(
+    #    chat_id=user.id,
+    #    photo=open(wishlist_pic_name, 'rb'),
+    #)
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['4']['pic_name']})")
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['5']['pic_name']})")
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['6']['pic_name']})")
