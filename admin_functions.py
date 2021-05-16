@@ -18,6 +18,10 @@ def notify_all_users_admin(update: Update, context: CallbackContext) -> None:
         user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
         for chat_id in user_id_df.user_id.values:
             try:
+                context.bot.sendPhoto(
+                    chat_id=int(chat_id),
+                    photo=open(UPDATE_PHOTO, 'rb'),
+                )
                 context.bot.send_message(
                     chat_id=int(chat_id),
                     text=UPDATE_TEXT,
