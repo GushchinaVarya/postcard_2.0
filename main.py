@@ -1,12 +1,8 @@
-from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, ParseMode
+from telegram import Bot,  ReplyKeyboardRemove
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
-from telegram.ext import CallbackContext, ConversationHandler
-from telegram.error import Unauthorized
+from telegram.ext import ConversationHandler
 from telegram.utils.request import Request
-from config import *
 from db import *
-from picture import write_wish, write_from, write_text_2
 import os
 from appearance_funtions import *
 from telegram import InputMediaPhoto, InputFile
@@ -16,7 +12,24 @@ from pic_config import PIC_INFO, PIC_FOLDER, PICTURE_NAMES_DEMO
 
 logger = getLogger(__name__)
 
-NAME, CONFIRM, WELCOME_SPEECH, FOUNDATION_0, METHOD_0, FOUNDATION_1, METHOD_1, FOUNDATION_2, METHOD_2, N_FOUNDS, THANKS_SPEECH, WISH, FROM_WHOM, FOUND_WISHLIST, WISH_MODE, FROM_MODE, PIC_NUM, DELETE_MODE = range(18)
+NAME = 0
+CONFIRM = 1
+WELCOME_SPEECH = 2
+FOUNDATION_0 = 3
+METHOD_0 = 4
+FOUNDATION_1 = 5
+METHOD_1 = 6
+FOUNDATION_2 = 7
+METHOD_2 = 8
+N_FOUNDS = 9
+THANKS_SPEECH = 10
+WISH = 11
+FROM_WHOM = 12
+FOUND_WISHLIST = 13
+WISH_MODE = 14
+FROM_MODE = 15
+PIC_NUM = 16
+DELETE_MODE = 17
 
 
 @debug_request
@@ -25,11 +38,12 @@ def start_buttons_handler(update: Update, context: CallbackContext):
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
     chat_id = update.message.chat.id
+    logger.info(f'chat_id {chat_id} started conversation')
     user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
     if chat_id not in user_id_df.user_id.values:
         user_id_df = user_id_df.append(pd.DataFrame({'user_id': np.array([chat_id])})).reset_index(drop=True)
         user_id_df.to_csv(USER_IDS_FILE)
-        logger.info('added to file of unique users chat_id: %s', chat_id)
+        logger.info(f'added to file of unique users chat_id {chat_id}')
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
         [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
@@ -57,6 +71,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        logger.info(f'chat_id {chat_id} wants to find wishlist')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text='Введите название вишлиста используя знак #\n\nпример #ДеньРожденияИванаИванова01Янв2021',
@@ -67,6 +82,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        logger.info(f'chat_id {chat_id} wants to see its wishlists')
         wishlists = show_my_wishlists(user_id=chat_id, limit=10)
         if len(wishlists) == 0:
             update.callback_query.bot.send_message(
@@ -130,52 +146,42 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
-        logger.info(f'{chat_id} started generating postcard')
-        #if context.user_data[FOUND_WISHLIST][:6] == '8марта':
-            #keyboard = [
-            #    [InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_8MARCH_PIC1),
-            #     InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_8MARCH_PIC2)]
-            #]
-            #update.callback_query.bot.send_message(
-            #    chat_id=chat_id,
-            #    text=f'Выберите внешний вид открытки',
-            #    reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            #    parse_mode=ParseMode.HTML
-            #)
-            #update.callback_query.bot.send_media_group(
-            #    chat_id=chat_id,
-            #    media=[InputMediaPhoto(open(PIC_FOLDER+PICTURE_NAMES_DEMO[2], 'rb')),
-            #           InputMediaPhoto(open(PIC_FOLDER+PICTURE_NAMES_DEMO[3], 'rb'))]
-            #)
-        #else:
-        keyboard = [
-            [InlineKeyboardButton(BUTTON_PIC0, callback_data=CALLBACK_BUTTON_PIC0),
-             InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1)],
-            [InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2),
-             InlineKeyboardButton(BUTTON_PIC3, callback_data=CALLBACK_BUTTON_PIC3)]
-        ]
-        message_to_del = context.bot.send_message(
-            chat_id=chat_id,
-            text='⏳Готовим варианты открыток...',
-        )
-        context.bot.sendPhoto(
-            chat_id=chat_id,
-            photo=open(PIC_FOLDER + PICTURE_NAMES_DEMO[0], 'rb'),
-        )
-        delete_flag = 0
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'Выберите внешний вид открытки',
-            reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            parse_mode=ParseMode.HTML
-        )
-        delete_flag = 1
-        if delete_flag == 1:
-            context.bot.delete_message(
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            logger.info(f'{chat_id} started generating postcard for wishlist {found_wishlist}')
+            keyboard = [
+                [InlineKeyboardButton(BUTTON_PIC0, callback_data=CALLBACK_BUTTON_PIC0),
+                 InlineKeyboardButton(BUTTON_PIC1, callback_data=CALLBACK_BUTTON_PIC1)],
+                [InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2),
+                 InlineKeyboardButton(BUTTON_PIC3, callback_data=CALLBACK_BUTTON_PIC3)]
+            ]
+            message_to_del = context.bot.send_message(
                 chat_id=chat_id,
-                message_id=message_to_del.message_id
+                text='⏳Готовим варианты открыток...',
             )
-
+            context.bot.sendPhoto(
+                chat_id=chat_id,
+                photo=open(PIC_FOLDER + PICTURE_NAMES_DEMO[0], 'rb'),
+            )
+            delete_flag = 0
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Выберите внешний вид открытки',
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                parse_mode=ParseMode.HTML
+            )
+            delete_flag = 1
+            if delete_flag == 1:
+                context.bot.delete_message(
+                    chat_id=chat_id,
+                    message_id=message_to_del.message_id
+                )
+        except:
+            logger.info(f'{chat_id} started generating postcard but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     if init == CALLBACK_BUTTON_PIC0:
         context.user_data[WISH_MODE] = 'True'
@@ -183,11 +189,21 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 0
         logger.info(f'{chat_id} choose pic0')
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
-            parse_mode=ParseMode.HTML
-        )
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            WISH_LIMIT = PIC_INFO['0']['lenths_wish'][-1]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            logger.info(f'{chat_id} started chose pic0 but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
+
 
     if init == CALLBACK_BUTTON_PIC1:
         context.user_data[WISH_MODE] = 'True'
@@ -195,11 +211,20 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 1
         logger.info(f'{chat_id} choose pic1')
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
-            parse_mode=ParseMode.HTML
-        )
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            WISH_LIMIT = PIC_INFO['1']['lenths_wish'][-1]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            logger.info(f'{chat_id} started chose pic1 but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     if init == CALLBACK_BUTTON_PIC2:
         context.user_data[WISH_MODE] = 'True'
@@ -207,11 +232,20 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 2
         logger.info(f'{chat_id} choose pic2')
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
-            parse_mode=ParseMode.HTML
-        )
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            WISH_LIMIT = PIC_INFO['2']['lenths_wish'][-1]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            logger.info(f'{chat_id} started chose pic2 but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     if init == CALLBACK_BUTTON_PIC3:
         context.user_data[WISH_MODE] = 'True'
@@ -219,11 +253,20 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[PIC_NUM] = 3
         logger.info(f'{chat_id} choose pic3')
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
-            parse_mode=ParseMode.HTML
-        )
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            WISH_LIMIT = PIC_INFO['3']['lenths_wish'][-1]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'Введите небольшое (до {WISH_LIMIT} символов) пожелание\nнапример: Счастья здоровья',
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            logger.info(f'{chat_id} started chose pic3 but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     #if init == CALLBACK_BUTTON_8MARCH_PIC1:
     #    context.user_data[WISH_MODE] = 'True'
@@ -253,115 +296,163 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'True'
         context.user_data[DELETE_MODE] = 'False'
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text='Введите подпись\nнапример: Oт твоей лучшей подруги',
-            parse_mode=ParseMode.HTML
-        )
+        logger.info(f'{chat_id} writing from')
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            pic_num = context.user_data[PIC_NUM]
+            wish = context.user_data[WISH]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Введите короткую подпись\nнапример: Oт твоей лучшей подруги',
+                parse_mode=ParseMode.HTML
+            )
+        except:
+            logger.info(f'{chat_id} started chose writing from but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     elif init == CALLBACK_BUTTON5_ANONYMOUS_SEND:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
-        keyboard = [
-            [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
-            [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
-        ]
-        pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
-        update.callback_query.bot.sendPhoto(
-            chat_id=chat_id,
-            photo=open(pic_name, 'rb'),
-        )
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f"Предпросмотр открытки ⬆️ \n(Ваша открытка будет отправлена анонимно)",
-            reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-        )
+        logger.info(f'{chat_id} chose anonymous sending')
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            pic_num = context.user_data[PIC_NUM]
+            wish = context.user_data[WISH]
+            keyboard = [
+                [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
+                [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
+            ]
+            pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
+            update.callback_query.bot.sendPhoto(
+                chat_id=chat_id,
+                photo=open(pic_name, 'rb'),
+            )
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f"Предпросмотр открытки ⬆️ \n(Ваша открытка будет отправлена анонимно)",
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+            )
+        except:
+            logger.info(f'{chat_id} started chose anonymos send but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     elif init == CALLBACK_BUTTON7_ADD_SCREENSHOT:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text='Пришлите скриншот перевода'
-        )
+        logger.info(f'{chat_id} sending screenshot')
+        try:
+            found_wishlist = context.user_data[FOUND_WISHLIST]
+            pic_num = context.user_data[PIC_NUM]
+            wish = context.user_data[WISH]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Пришлите скриншот перевода. Можно отправить только одно изображение.'
+            )
+        except:
+            logger.info(f'{chat_id} started tries to add screenshot but no wishlist in ram')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала'
+            )
 
     elif init == CALLBACK_BUTTON8_NO_SCREENSHOT:
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
-        wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
-        wishlist_author_user_id = wishlist[0][0]
-        wishlist_thanks_message = wishlist[0][9]
-        bot = update.callback_query.bot
-        if os.path.exists(PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']):
-            pic_name = PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
-        else:
-            pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
-        bot.send_message(
-            chat_id=wishlist_author_user_id,
-            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open(pic_name, 'rb'),
-        )
-        update.callback_query.bot.send_message(
-            chat_id=chat_id,
-            text=f'''
+        logger.info(f'{chat_id} chose no screenshot')
+        try:
+            wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
+            wishlist_author_user_id = wishlist[0][0]
+            wishlist_thanks_message = wishlist[0][9]
+            bot = update.callback_query.bot
+            if os.path.exists(PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']):
+                pic_name = PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
+            else:
+                pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
+            bot.send_message(
+                chat_id=wishlist_author_user_id,
+                text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+            )
+            bot.sendPhoto(
+                chat_id=wishlist_author_user_id,
+                photo=open(pic_name, 'rb'),
+            )
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'''
 📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
 Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
 Спасибо, что воспользовались ботом.
 Чтобы найти другой вишлист или создать свой нажмите /start''',
-            reply_markup=ReplyKeyboardRemove(),
-            parse_mode=ParseMode.HTML
-        )
-        logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
-        os.system(f"(rm -rf {PIC_FOLDER + 'screen_' + str(chat_id) + '.png'})")
-        os.system(f"(rm -rf {PIC_FOLDER + 'from_' + str(chat_id) + '_' + PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
-        os.system(f"(rm -rf {PIC_FOLDER + 'wish_' + str(chat_id) + '_' + PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
-        logger.info(f'all temporary data for {chat_id} was successfully deleted')
+                reply_markup=ReplyKeyboardRemove(),
+                parse_mode=ParseMode.HTML
+            )
+            logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id}')
+            os.system(f"(rm -rf {PIC_FOLDER + 'screen_' + str(chat_id) + '.png'})")
+            os.system(f"(rm -rf {PIC_FOLDER + 'from_' + str(chat_id) + '_' + PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
+            os.system(f"(rm -rf {PIC_FOLDER + 'wish_' + str(chat_id) + '_' + PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
+            logger.info(f'all temporary data for {chat_id} was successfully deleted')
+        except:
+            logger.info(f'{chat_id} wants to send without screenshot but error occured')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Что-то пошло не так😔 Пожалуйста нажмите /start и начните сначала'
+            )
 
     elif init == CALLBACK_BUTTON9_READY:
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
-        wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
-        wishlist_author_user_id = wishlist[0][0]
-        wishlist_thanks_message = wishlist[0][9]
-        if os.path.exists(PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']):
-            pic_name = PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
-        else:
-            pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
-        bot = update.callback_query.bot
-        bot.send_message(
-            chat_id=wishlist_author_user_id,
-            text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open(pic_name, 'rb'),
-        )
-        bot.sendPhoto(
-            chat_id=wishlist_author_user_id,
-            photo=open(PIC_FOLDER+'screen_' + str(chat_id) + '.png', 'rb'),
-        )
-        bot.send_message(
-            chat_id=chat_id,
-            text=f'''
+        try:
+            wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
+            wishlist_author_user_id = wishlist[0][0]
+            wishlist_thanks_message = wishlist[0][9]
+            if os.path.exists(PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']):
+                pic_name = PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
+            else:
+                pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
+            bot = update.callback_query.bot
+            bot.send_message(
+                chat_id=wishlist_author_user_id,
+                text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
+            )
+            bot.sendPhoto(
+                chat_id=wishlist_author_user_id,
+                photo=open(pic_name, 'rb'),
+            )
+            bot.sendPhoto(
+                chat_id=wishlist_author_user_id,
+                photo=open(PIC_FOLDER+'screen_' + str(chat_id) + '.png', 'rb'),
+            )
+            bot.send_message(
+                chat_id=chat_id,
+                text=f'''
 📤 Ваша открытка отправлена автору вишлиста 📤 \n\n
 Сообщение от автора вишлиста: <b>{wishlist_thanks_message}</b>\n
 Спасибо, что воспользовались ботом.
 Чтобы найти другой вишлист или создать свой нажмите /start''',
-            reply_markup=ReplyKeyboardRemove(),
-            parse_mode=ParseMode.HTML
-        )
-        logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id} pic {PIC_INFO[str(context.user_data[PIC_NUM])]}')
-        os.system(f"(rm -rf {PIC_FOLDER+'screen_' + str(chat_id) + '.png'})")
-        os.system(f"(rm -rf {PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
-        os.system(f"(rm -rf {PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
-        logger.info(f'all temporary data for {chat_id} was successfully deleted')
+                reply_markup=ReplyKeyboardRemove(),
+                parse_mode=ParseMode.HTML
+            )
+            logger.info(f'{chat_id} successfully sent postcard to user {wishlist_author_user_id} pic {PIC_INFO[str(context.user_data[PIC_NUM])]}')
+            os.system(f"(rm -rf {PIC_FOLDER+'screen_' + str(chat_id) + '.png'})")
+            os.system(f"(rm -rf {PIC_FOLDER+'from_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
+            os.system(f"(rm -rf {PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']})")
+            logger.info(f'all temporary data for {chat_id} was successfully deleted')
+        except:
+            logger.info(f'{chat_id} wants to send postcard but error occured')
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text='Что-то пошло не так😔 Пожалуйста нажмите /start и начните сначала'
+            )
 
     elif init == CALLBACK_BUTTON10_DELETE_WISHLIST:
         context.user_data[FROM_MODE] = 'False'
@@ -377,17 +468,44 @@ def do_create(update: Update, context: CallbackContext):
 def message_handler(update: Update, context: CallbackContext):
     text = update.message.text
     user_id = update.message.chat.id
+    chat_id = update.message.chat.id
     if text[0] == '#':
         try:
             if context.user_data[DELETE_MODE] == 'True':
                 update.message.reply_text('Чтобы удалить вишлист введите его название без # . Вернуться в главное меню - /start')
+                logger.info(f'{chat_id} tries to delete wishlist but wrote with #')
+            else:
+                wishlistname = text[1:]
+                logger.info(f'{chat_id} tries to find wishlist with name {wishlistname}')
+                wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
+                if wishlist:
+                    context.user_data[FOUND_WISHLIST] = wishlistname
+                    logger.info(f'{chat_id} successfully found wishlist with name {wishlistname}')
+                    keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD,
+                                                      callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
+                    reply_text = print_wishlist(wishlist[0])
+                    update.message.reply_text(
+                        text=f'Вишлист <b>{wishlist[0][1]}</b> найден!✔️\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                        parse_mode=ParseMode.HTML,
+                        disable_web_page_preview=True
+                    )
+                else:
+                    logger.info(f'no wishlist with name {wishlistname}')
+                    update.message.reply_text(
+                        text='Вишлист c таким именем не найден. Введите другой вишлист.',
+                        reply_markup=ReplyKeyboardRemove()
+                    )
         except:
-            update.message.reply_text('Я кажется забыл о чем мы говорили. Пожалуйста нажмите /start')
-        else:
+            context.user_data[FROM_MODE] = 'False'
+            context.user_data[WISH_MODE] = 'False'
+            context.user_data[DELETE_MODE] = 'False'
             wishlistname = text[1:]
+            logger.info(f'{chat_id} tries to find wishlist with name {wishlistname}')
             wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
             if wishlist:
                 context.user_data[FOUND_WISHLIST] = wishlistname
+                logger.info(f'{chat_id} successfully found wishlist with name {wishlistname}')
                 keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
                 reply_text = print_wishlist(wishlist[0])
                 update.message.reply_text(
@@ -397,71 +515,81 @@ def message_handler(update: Update, context: CallbackContext):
                     disable_web_page_preview=True
                 )
             else:
+                logger.info(f'no wishlist with name {wishlistname}')
                 update.message.reply_text(
                     text='Вишлист c таким именем не найден. Введите другой вишлист.',
                     reply_markup=ReplyKeyboardRemove()
                 )
 
     else:
-        if (context.user_data[WISH_MODE] == 'True'):
-            wishtext = text
-            if len(wishtext) > WISH_LIMIT:
-                update.message.reply_text(
-                    text="Слишком длинное пожелание"
-                )
+        try:
+            if context.user_data[WISH_MODE] == 'True':
+                wishtext = text
+                if len(wishtext) > PIC_INFO[str(context.user_data[PIC_NUM])]['lenths_wish'][-1]:
+                    logger.info(f'{chat_id} made too long wish')
+                    update.message.reply_text(
+                        text="Слишком длинное пожелание. Введите пожалуйста пожелание покороче😊"
+                    )
+                else:
+                    context.user_data[WISH] = wishtext
+                    keyboard = [
+                        [InlineKeyboardButton(BUTTON5_ANONYMOUS_SEND, callback_data=CALLBACK_BUTTON5_ANONYMOUS_SEND)],
+                        [InlineKeyboardButton(BUTTON6_ADD_NAME, callback_data=CALLBACK_BUTTON6_ADD_NAME)],
+                    ]
+                    write_text_2(wishtext, context.user_data[PIC_NUM], user_id, 'wish')
+                    context.bot.sendPhoto(
+                        chat_id=update.message.chat.id,
+                        photo=open(PIC_FOLDER+'wish_'+str(user_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name'], 'rb'),
+                    )
+                    update.message.reply_text(
+                        text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять пожелание, введите его заново. Либо выберите нужна ли на открытке подпись⬇️",
+                        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                    )
+                    logger.info(f'{chat_id} successfully wrote wish with length {len(wishtext)}')
+            elif context.user_data[FROM_MODE] == 'True':
+                from_whom = text
+                if len(from_whom) > PIC_INFO[str(context.user_data[PIC_NUM])]['lenths_from'][-1]:
+                    logger.info(f'{chat_id} made too long from')
+                    update.message.reply_text(
+                        text="Слишком длинная подпись. Введите пожалуйста подпись покороче😊"
+                    )
+                else:
+                    context.user_data[FROM_WHOM] = from_whom
+                    keyboard = [
+                        [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
+                        [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
+                    ]
+                    write_text_2(from_whom, context.user_data[PIC_NUM], user_id, 'from')
+                    context.bot.sendPhoto(
+                        chat_id=update.message.chat.id,
+                        photo=open(PIC_FOLDER+'from_'+str(user_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name'], 'rb'),
+                    )
+                    update.message.reply_text(
+                        text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять подпись, введите ее заново. Либо выберите нужно ли прикреплять скриншот.",
+                        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+                    )
+                    logger.info(f'{chat_id} successfully wrote from with length {len(from_whom)}')
+            elif context.user_data[DELETE_MODE] == 'True':
+                wishlistname = text
+                wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
+                if wishlist:
+                    if wishlist[0][0] != update.message.chat.id:
+                        update.message.reply_text('Вы не можете удалить этот вишлист, так как не Вы его создали. Введите другой вишлист или нажмите /start')
+                    if wishlist[0][0] == update.message.chat.id:
+                        delete(namelowreg=wishlistname.lower())
+                        update.message.reply_text('Вишлист успешно удален. Чтобы найти или создать вишлист нажмите /start')
+                        context.user_data[DELETE_MODE] = 'False'
+                        logger.info(f'wishlist {wishlistname} deleted')
+                else:
+                    update.message.reply_text('Вишлист c таким именем не найден. Введите другой вишлист или нажмите /start')
             else:
-                context.user_data[WISH] = wishtext
-                logger.info('user_data: %s', context.user_data)
-                keyboard = [
-                    [InlineKeyboardButton(BUTTON5_ANONYMOUS_SEND, callback_data=CALLBACK_BUTTON5_ANONYMOUS_SEND)],
-                    [InlineKeyboardButton(BUTTON6_ADD_NAME, callback_data=CALLBACK_BUTTON6_ADD_NAME)],
-                ]
-                write_text_2(wishtext, context.user_data[PIC_NUM], user_id, 'wish')
-                #pic_name = PIC_FOLDER+'wish_'+str(update.message.chat.id)+'_'+PICTURE_NAMES[context.user_data[PIC_NUM]]
-                #write_wish(text=wishtext, pic_number=context.user_data[PIC_NUM], pic_name=PIC_FOLDER+PICTURE_NAMES[context.user_data[PIC_NUM]], new_name=pic_name)
-                context.bot.sendPhoto(
-                    chat_id=update.message.chat.id,
-                    photo=open(PIC_FOLDER+'wish_'+str(user_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name'], 'rb'),
-                )
-                update.message.reply_text(
-                    text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять пожелание, введите его заново. Либо выберите нужна ли на открытке подпись⬇️",
-                    reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-                )
-        elif context.user_data[FROM_MODE] == 'True':
-            from_whom = text
-            context.user_data[FROM_WHOM] = from_whom
-            logger.info('user_data: %s', context.user_data)
-            keyboard = [
-                [InlineKeyboardButton(BUTTON7_ADD_SCREENSHOT, callback_data=CALLBACK_BUTTON7_ADD_SCREENSHOT)],
-                [InlineKeyboardButton(BUTTON8_NO_SCREENSHOT, callback_data=CALLBACK_BUTTON8_NO_SCREENSHOT)]
-            ]
-            write_text_2(from_whom, context.user_data[PIC_NUM], user_id, 'from')
-            #pic_name_wish = PIC_FOLDER+'wish_' + str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
-            #pic_name = PIC_FOLDER+'from_'+str(update.message.chat.id) + '_' + PICTURE_NAMES[context.user_data[PIC_NUM]]
-            #write_from(text=from_whom, pic_number=context.user_data[PIC_NUM], pic_name=pic_name_wish, new_name=pic_name)
-            context.bot.sendPhoto(
-                chat_id=update.message.chat.id,
-                photo=open(PIC_FOLDER+'from_'+str(user_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name'], 'rb'),
-            )
-            update.message.reply_text(
-                text=f"Предпросмотр открытки ⬆️\nЕсли передумали и хотите поменять подпись, введите ее заново. Либо выберите нужно ли прикреплять скриншот.",
-                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
-            )
-        elif context.user_data[DELETE_MODE] == 'True':
-            wishlistname = text
-            wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
-            if wishlist:
-                if wishlist[0][0] != update.message.chat.id:
-                    update.message.reply_text('Вы не можете удалить этот вишлист, так как не Вы его создали. Введите другой вишлист или нажмите /start')
-                if wishlist[0][0] == update.message.chat.id:
-                    delete(namelowreg=wishlistname.lower())
-                    update.message.reply_text('Вишлист успешно удален. Чтобы найти или создать вишлист нажмите /start')
-                    context.user_data[DELETE_MODE] = 'False'
-                    logger.info(f'wishlist {wishlistname} deleted')
-            else:
-                update.message.reply_text('Вишлист c таким именем не найден. Введите другой вишлист или нажмите /start')
-        else:
-            update.message.reply_text('Неверный формат ввода')
+                update.message.reply_text('Неверный формат ввода')
+        except:
+            context.user_data[FROM_MODE] = 'False'
+            context.user_data[WISH_MODE] = 'False'
+            context.user_data[DELETE_MODE] = 'False'
+            update.message.reply_text('Кажется мы слишком давно не общались😔 Простите, но я забыл о чем мы говорили. Пожалуйста нажмите /start и начните сначала')
+
 
 def photo_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
@@ -470,7 +598,7 @@ def photo_handler(update: Update, context: CallbackContext):
     name_screenshot = PIC_FOLDER+'screen_'+str(update.message.chat.id)+'.png'
     photo_file = update.message.photo[-1].get_file()
     photo_file.download(name_screenshot)
-    logger.info("Photo of %s", name_screenshot)
+    logger.info(f'{update.message.chat.id} added screenshot {name_screenshot}')
     keyboard = [[InlineKeyboardButton(BUTTON9_READY, callback_data=CALLBACK_BUTTON9_READY)]]
     update.message.reply_text(
         text='Скриншот добавлен',
@@ -486,6 +614,11 @@ def name_handler(update: Update, context: CallbackContext):
     if len(name.split(' ')) > 1:
         update.message.reply_text(
             text='Пожалуйста введите название без пробелов.',
+            parse_mode=ParseMode.HTML,
+        )
+    elif len(name) > 32:
+        update.message.reply_text(
+            text='Слишком длинное название. Пожалуйста придумайте более короткое имя вишлиста. Так вашим друзьям будет проще найти ваш вишлист и поздравить вас.',
             parse_mode=ParseMode.HTML,
         )
     else:
@@ -511,22 +644,36 @@ def name_handler(update: Update, context: CallbackContext):
             )
 
 def welcome_speech_handler(update: Update, context: CallbackContext):
-    context.user_data[WELCOME_SPEECH] = update.message.text
-    update.message.reply_text(
-        text='Введите название первой благотворительной организации (максимум - 3)\n\nОтменить создание вишлиста - /cancel',
-        parse_mode=ParseMode.HTML,
-    )
-    return FOUNDATION_0
+    welcome_speech = update.message.text
+    if len(welcome_speech) > PIC_INFO['6']['lenths_author'][-1]:
+        update.message.reply_text(
+            text='Слишком длинное вступление. Оно будет очень мелко смотреться на картинке. Пожалуйста придумайте более короткое обращение.',
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        context.user_data[WELCOME_SPEECH] = welcome_speech
+        update.message.reply_text(
+            text='Введите название первой благотворительной организации. Например: фонд защиты животных "WWF"\n\nОтменить создание вишлиста - /cancel',
+            parse_mode=ParseMode.HTML,
+        )
+        return FOUNDATION_0
 
 @debug_request
 def foundation_0_handler(update: Update, context: CallbackContext):
-    context.user_data[FOUNDATION_0] = update.message.text
-    logger.info('user_data: %s', context.user_data)
-    update.message.reply_text(
-        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта.\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
-        parse_mode=ParseMode.HTML,
-    )
-    return METHOD_0
+    foundation_0 = update.message.text
+    if len(foundation_0) > PIC_INFO['6']['lenths_fund1'][-1]:
+        update.message.reply_text(
+            text='Слишком длинный текст, он будет очень мелко смортреться на картинке. Пожалуйства введите только само название фонда или сформулируйте его более кратко.',
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        context.user_data[FOUNDATION_0] = foundation_0
+        logger.info('user_data: %s', context.user_data)
+        update.message.reply_text(
+            text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта.\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
+            parse_mode=ParseMode.HTML,
+        )
+        return METHOD_0
 
 @debug_request
 def method_0_handler(update: Update, context: CallbackContext):
@@ -540,13 +687,20 @@ def method_0_handler(update: Update, context: CallbackContext):
 
 @debug_request
 def foundation_1_handler(update: Update, context: CallbackContext):
-    context.user_data[FOUNDATION_1] = update.message.text
-    logger.info('user_data: %s', context.user_data)
-    update.message.reply_text(
-        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
-        parse_mode=ParseMode.HTML,
-    )
-    return METHOD_1
+    foundation_1 = update.message.text
+    if len(foundation_1) > PIC_INFO['6']['lenths_fund2'][-1]:
+        update.message.reply_text(
+            text='Слишком длинный текст, он будет очень мелко смортреться на картинке. Пожалуйства введите только само название фонда или сформулируйте его более кратко.',
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        context.user_data[FOUNDATION_1] = foundation_1
+        logger.info('user_data: %s', context.user_data)
+        update.message.reply_text(
+            text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
+            parse_mode=ParseMode.HTML,
+        )
+        return METHOD_1
 
 @debug_request
 def method_1_handler(update: Update, context: CallbackContext):
@@ -560,13 +714,20 @@ def method_1_handler(update: Update, context: CallbackContext):
 
 @debug_request
 def foundation_2_handler(update: Update, context: CallbackContext):
-    context.user_data[FOUNDATION_2] = update.message.text
-    logger.info('user_data: %s', context.user_data)
-    update.message.reply_text(
-        text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
-        parse_mode=ParseMode.HTML,
-    )
-    return METHOD_2
+    foundation_2 = update.message.text
+    if len(foundation_2) > PIC_INFO['6']['lenths_fund3'][-1]:
+        update.message.reply_text(
+            text='Слишком длинный текст, он будет очень мелко смортреться на картинке. Пожалуйства введите только само название фонда или сформулируйте его более кратко.',
+            parse_mode=ParseMode.HTML,
+        )
+    else:
+        context.user_data[FOUNDATION_2] = foundation_2
+        logger.info('user_data: %s', context.user_data)
+        update.message.reply_text(
+            text='Введите методы оплаты для этой организации в свободном формате. Также можете указать сайт проекта\n\nПример: карта сбербанка 1111 2222 3333 4444 либо Paypal paypal@mail.ru либо на сайте www.fund.ru/donate\n\nОтменить создание вишлиста - /cancel',
+            parse_mode=ParseMode.HTML,
+        )
+        return METHOD_2
 
 @debug_request
 def method_2_handler(update: Update, context: CallbackContext):
@@ -673,10 +834,6 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
         media=[InputMediaPhoto(open(wishlist_pic_name_white, 'rb')),
                InputMediaPhoto(open(wishlist_pic_name_dark, 'rb'))]
     )
-    #context.bot.sendPhoto(
-    #    chat_id=int(user.id),
-    #    photo=open(wishlist_pic_name, 'rb'),
-    #)
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['4']['pic_name']})")
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['5']['pic_name']})")
     os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['6']['pic_name']})")
@@ -900,10 +1057,7 @@ def main():
             ],
             THANKS_SPEECH: [
                 MessageHandler(Filters.text, thanks_speech_handler, pass_user_data=True),
-            ]#,
-            #CONFIRM: [
-            #    CallbackQueryHandler(finish_creating_handler, pass_user_data=True),
-            #]
+            ]
         },
         fallbacks=[
             CommandHandler('cancel', cancel_handler),
