@@ -1,11 +1,11 @@
 PIC_FOLDER = 'pics/'
 FONTS_FOLDER = 'fonts/'
 
-PICTURE_NAMES_DEMO = ['demo.jpeg']
+PICTURE_NAMES_DEMO = ['postcard_preview_text.jpeg']
 
 PIC_INFO = {
     '0': {
-        'pic_name': 'bg_postcard_8_v1.jpeg',
+        'pic_name': 'postcard01.jpeg',
         'lenths_wish': [10, 50, 100, 140],
         'fontsizes_wish': [50, 45, 40, 30],
         'rowlens_wish': [15, 15, 17, 22],
@@ -20,7 +20,7 @@ PIC_INFO = {
         'font_from': 'SEGOESC.TTF'
     },
     '1': {
-        'pic_name': 'bg_postcard_9_v1.jpeg',
+        'pic_name': 'postcard02.jpeg',
         'lenths_wish': [10, 50, 100, 140],
         'fontsizes_wish': [50, 45, 40, 30],
         'rowlens_wish': [15, 15, 17, 22],
@@ -35,7 +35,7 @@ PIC_INFO = {
         'font_from': 'SEGOESC.TTF'
     },
     '2': {
-        'pic_name': 'bg_postcard_10_v1.jpeg',
+        'pic_name': 'postcard03.jpeg',
         'lenths_wish': [10, 50, 100, 140],
         'fontsizes_wish': [50, 45, 40, 30],
         'rowlens_wish': [15, 15, 17, 22],
@@ -50,7 +50,7 @@ PIC_INFO = {
         'font_from': 'SEGOESC.TTF'
     },
     '3': {
-        'pic_name': 'bg_postcard_13_v1.jpeg',
+        'pic_name': 'postcard04.jpeg',
         'lenths_wish': [10, 50, 100, 140],
         'fontsizes_wish': [50, 45, 40, 30],
         'rowlens_wish': [15, 15, 17, 22],
@@ -65,7 +65,7 @@ PIC_INFO = {
         'font_from': 'SEGOESC.TTF'
     },
     '4': {
-        'pic_name': 'bg_wishlist_3_inst_1fund.jpeg',
+        'pic_name': 'wishlist_dark_1fund.jpeg',
         'loc_author': (50, 250),
         'lenths_author': [10, 50, 100, 140, 190, 250, 300, 400],
         'fontsizes_author': [40, 30, 30, 25, 25, 20, 20, 15],
@@ -92,7 +92,7 @@ PIC_INFO = {
         'font_discl': 'SEGOEPR.TTF',
     },
     '5': {
-        'pic_name': 'bg_wishlist_3_inst_2funds.jpeg',
+        'pic_name': 'wishlist_dark_2funds.jpeg',
         'loc_author': (50, 250),
         'lenths_author': [10, 50, 100, 140, 190, 250, 300, 400],
         'fontsizes_author': [40, 30, 30, 25, 25, 20, 20, 15],
@@ -125,7 +125,7 @@ PIC_INFO = {
         'font_discl': 'SEGOEPR.TTF',
     },
     '6': {
-        'pic_name': 'bg_wishlist_3_inst_3funds.jpeg',
+        'pic_name': 'wishlist_dark_3funds.jpeg',
         'loc_author': (50, 250),
         'lenths_author': [10, 50, 100, 140, 190, 250, 300, 400],
         'fontsizes_author': [40, 30, 30, 25, 25, 20, 20, 15],
@@ -164,7 +164,7 @@ PIC_INFO = {
         'font_discl': 'SEGOEPR.TTF',
     },
     '7': {
-        'pic_name': 'bg_wishlist_2_inst_1fund.jpeg',
+        'pic_name': 'wishlist_white_1fund.jpeg',
         'loc_author': (50, 250),
         'lenths_author': [10, 50, 100, 140, 190, 250, 300, 400],
         'fontsizes_author': [40, 30, 30, 25, 25, 20, 20, 15],
@@ -191,7 +191,7 @@ PIC_INFO = {
         'font_discl': 'SEGOEPR.TTF',
     },
     '8': {
-        'pic_name': 'bg_wishlist_2_inst_2funds.jpeg',
+        'pic_name': 'wishlist_white_2funds.jpeg',
         'loc_author': (50, 250),
         'lenths_author': [10, 50, 100, 140, 190, 250, 300, 400],
         'fontsizes_author': [40, 30, 30, 25, 25, 20, 20, 15],
@@ -224,7 +224,7 @@ PIC_INFO = {
         'font_discl': 'SEGOEPR.TTF',
     },
     '9': {
-        'pic_name': 'bg_wishlist_2_inst_3funds.jpeg',
+        'pic_name': 'wishlist_white_3funds.jpeg',
         'loc_author': (50, 250),
         'lenths_author': [10, 50, 100, 140, 190, 250, 300, 400],
         'fontsizes_author': [40, 30, 30, 25, 25, 20, 20, 15],
