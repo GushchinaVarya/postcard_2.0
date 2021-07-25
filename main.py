@@ -155,6 +155,11 @@ def do_create(update: Update, context: CallbackContext):
                 [InlineKeyboardButton(BUTTON_PIC2, callback_data=CALLBACK_BUTTON_PIC2),
                  InlineKeyboardButton(BUTTON_PIC3, callback_data=CALLBACK_BUTTON_PIC3)]
             ]
+            update.callback_query.bot.send_message(
+                chat_id=chat_id,
+                text=f'<b>Вы совершили пожертвование! Давайте порадуем автора вишлиста и отправим ему открытку!</b>',
+                parse_mode=ParseMode.HTML
+            )
             message_to_del = context.bot.send_message(
                 chat_id=chat_id,
                 text='⏳Готовим варианты открыток...',
@@ -485,10 +490,18 @@ def message_handler(update: Update, context: CallbackContext):
                                                       callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
                     reply_text = print_wishlist(wishlist[0])
                     update.message.reply_text(
-                        text=f'Вишлист <b>{wishlist[0][1]}</b> найден!✔️\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                        text=f'''
+Вишлист <b>{wishlist[0][1]}</b> найден!✔️
+
+️{reply_text}
+
+<b>Если вы хотите поздравить автора пожертвуйте в одну из этих организаций и нажмите кнопку "Я совершил пожертвование!"</b>''',
                         reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
                         parse_mode=ParseMode.HTML,
                         disable_web_page_preview=True
+                    )
+                    update.message.reply_text(
+                        text='Чтобы найти другой вишлист нажмите /start'
                     )
                 else:
                     logger.info(f'no wishlist with name {wishlistname}')
@@ -601,8 +614,9 @@ def photo_handler(update: Update, context: CallbackContext):
     logger.info(f'{update.message.chat.id} added screenshot {name_screenshot}')
     keyboard = [[InlineKeyboardButton(BUTTON9_READY, callback_data=CALLBACK_BUTTON9_READY)]]
     update.message.reply_text(
-        text='Скриншот добавлен',
+        text='Скриншот успешно добавлен.\n<b>Отлично! Поздравление готово! Отправить открытку и скриншот автору вишлиста?</b>',
         reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
+        parse_mode=ParseMode.HTML
     )
 
 @debug_request
@@ -778,7 +792,7 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
 
     message_to_del = context.bot.send_message(
         chat_id=int(user.id),
-        text=f"⏳Готовим красивую картинку с вашим вишлистом...",
+        text=f"⏳Готовим красивые картинки с вашим вишлистом... ",
         parse_mode=ParseMode.HTML
     )
 
@@ -853,105 +867,34 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
             text=f'''
 <b>Отправьте друзьям тег #{name} и ссылку на бота https://t.me/MoreThanPostcardBot
 Либо поделитесь любой из этих картинок в соцсетях. </b>
+
+Теперь любой человек, который узнает о вашем вишлисте, сможет ввести #{name} в боте и увидеть этот вишлист в полном текстовом виде со всеми ссылками и методами оплаты.
+
+Чтобы найти или создать другой вишлист нажмите /start
     ''',
             reply_markup=ReplyKeyboardRemove(),
             parse_mode=ParseMode.HTML,
             disable_web_page_preview=True
         )
 
-    if n_founds == 1:
-        reply_text = print_1_fund(name, welcome_speech, foundation0, method0, thanks_speech)
-    if n_founds == 2:
-        foundation1 = context.user_data[FOUNDATION_1]
-        method1 = context.user_data[METHOD_1]
-        reply_text = print_2_funds(name, welcome_speech, foundation0, method0, foundation1, method1, thanks_speech)
-    if n_founds == 3:
-        foundation1 = context.user_data[FOUNDATION_1]
-        method1 = context.user_data[METHOD_1]
-        foundation2 = context.user_data[FOUNDATION_2]
-        method2 = context.user_data[METHOD_2]
-        reply_text = print_3_funds(name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech)
-    update.message.reply_text(
-        text=f"{reply_text}",
-        parse_mode=ParseMode.HTML,
-        disable_web_page_preview=True
-    )
-
-    return CONFIRM
-
-@debug_request
-def finish_creating_handler(update: Update, context: CallbackContext):
-    context.user_data[WISH_MODE] = 'False'
-    context.user_data[FROM_MODE] = 'False'
-    context.user_data[DELETE_MODE] = 'False'
-    user = update.effective_user
-    name = context.user_data[NAME]
-    foundation0 = context.user_data[FOUNDATION_0]
-    method0 = context.user_data[METHOD_0]
-    n_founds = context.user_data[N_FOUNDS]
-    welcome_speech = context.user_data[WELCOME_SPEECH]
-    thanks_speech = context.user_data[THANKS_SPEECH]
-    if n_founds == 1:
-        foundation1 = 'None'
-        method1 = 'None'
-        foundation2 = 'None'
-        method2 = 'None'
-    if n_founds == 2:
-        foundation1 = context.user_data[FOUNDATION_1]
-        method1 = context.user_data[METHOD_1]
-        foundation2 = 'None'
-        method2 = 'None'
-    if n_founds == 3:
-        foundation1 = context.user_data[FOUNDATION_1]
-        method1 = context.user_data[METHOD_1]
-        foundation2 = context.user_data[FOUNDATION_2]
-        method2 = context.user_data[METHOD_2]
-    if name:
-        if foundation0:
-            if method0:
-                add_message(
-                    user_id=user.id,
-                    name=name,
-                    namelowreg=name.lower(),
-                    welcome_speech=welcome_speech,
-                    foundation0=foundation0,
-                    method0=method0,
-                    foundation1=foundation1,
-                    method1=method1,
-                    foundation2=foundation2,
-                    method2=method2,
-                    thanks_speech=thanks_speech,
-                    n_founds=n_founds
-                )
-    update.callback_query.bot.send_message(
-        chat_id=update.callback_query.message.chat.id,
-        text=f'''
-Вишлист сохранен✔️
-Отправьте друзьям тег #{name} и ссылку на бота https://t.me/MoreThanPostcardBot
-Либо поделитесь этой картинкой в соцсетях.
-''',
-        reply_markup=ReplyKeyboardRemove(),
-        parse_mode=ParseMode.HTML,
-        disable_web_page_preview=True
-    )
-
-    # БЛОК СОЗДАНИЯ КАРТИНКИ
-    #    update.callback_query.bot.sendPhoto(
-    #    chat_id=user.id,
-    #    photo=open(wishlist_pic_name, 'rb'),
+    #if n_founds == 1:
+    #    reply_text = print_1_fund(name, welcome_speech, foundation0, method0, thanks_speech)
+    #if n_founds == 2:
+    #    foundation1 = context.user_data[FOUNDATION_1]
+    #    method1 = context.user_data[METHOD_1]
+    #    reply_text = print_2_funds(name, welcome_speech, foundation0, method0, foundation1, method1, thanks_speech)
+    #if n_founds == 3:
+    #    foundation1 = context.user_data[FOUNDATION_1]
+    #    method1 = context.user_data[METHOD_1]
+    #    foundation2 = context.user_data[FOUNDATION_2]
+    #    method2 = context.user_data[METHOD_2]
+    #    reply_text = print_3_funds(name, welcome_speech, foundation0, method0, foundation1, method1, foundation2, method2, thanks_speech)
+    #update.message.reply_text(
+    #    text=f"{reply_text}",
+    #    parse_mode=ParseMode.HTML,
+    #    disable_web_page_preview=True
     #)
-    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['4']['pic_name']})")
-    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['5']['pic_name']})")
-    os.system(f"(rm -rf {PIC_FOLDER + '*_' + str(user.id) + '_' + PIC_INFO['6']['pic_name']})")
-    logger.info(f'all temporary data for {user.id} was successfully deleted')
 
-    update.callback_query.bot.send_message(
-        chat_id=user.id,
-        text='\nЧтобы найти или создать вишлист нажмите /start',
-        reply_markup=ReplyKeyboardRemove(),
-        parse_mode=ParseMode.HTML
-    )
-    logger.info('user_data: %s', context.user_data)
     return ConversationHandler.END
 
 @debug_request
