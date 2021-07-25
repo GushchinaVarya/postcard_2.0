@@ -1017,6 +1017,7 @@ def main():
     updater.dispatcher.add_handler(CommandHandler('stopreminder', remove_timer_bday))
     updater.dispatcher.add_handler(CommandHandler('notify_all_users', notify_all_users_admin))
     updater.dispatcher.add_handler(CommandHandler('reset_all_timers', reset_all_timers_admin))
+    updater.dispatcher.add_handler(CommandHandler('show_jobs_by_name', show_jobs_by_name))
 
     updater.start_polling()
     updater.idle()
