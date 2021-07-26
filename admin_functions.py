@@ -53,20 +53,29 @@ def reset_all_timers_admin(update: Update, context: CallbackContext) -> None:
 
                 if (datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2) - datetime.datetime.today()).days < 0:
                     due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
-
                 elif (datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2) - datetime.datetime.today()).days >= 0:
                     due = datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
                 else:
-                    logger.info(f'error setting timer for chat_id {chat_id} with birthday {dateofbirth}. Now is {str(datetime.datetime.today())}')
+                    logger.info(f'error setting reminder for chat_id {chat_id} with birthday {dateofbirth}. Now is {str(datetime.datetime.today())}')
+
+                if (datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.datetime.today()).days < 0:
+                    due_bd = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER)
+                elif (datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.datetime.today()).days >= 0:
+                    due_bd = datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER)
+                else:
+                    logger.info(f'error setting congratulator for chat_id {chat_id} with birthday {dateofbirth}. Now is {str(datetime.datetime.today())}')
+
 
                 job_removed = remove_job_if_exists(str(chat_id), context)
                 if job_removed:
-                    logger.info(f'old {chat_id} timer was removed')
+                    logger.info(f'old {chat_id} reminder and congratulator were removed')
                 context.job_queue.run_once(alarm, when=due, context=chat_id, name=str(chat_id))
-                logger.info(f'admin successfully set timer for {chat_id} on {str(due)}. Now is {str(datetime.datetime.today())}')
+                logger.info(f'admin successfully set reminder for {chat_id} on {str(due)}. Now is {str(datetime.datetime.today())}')
+                context.job_queue.run_once(happybday, when=due_bd, context=chat_id, name=str(chat_id))
+                logger.info(f'admin successfully set congratulator for {chat_id} on {str(due_bd)}. Now is {str(datetime.datetime.today())}')
 
             except (IndexError, ValueError):
-                logger.info(f'problem with setting timer for {chat_id}')
+                logger.info(f'problem with setting reminder and congratulator for {chat_id}')
 
     else:
         update.message.reply_text('Неверная команда')

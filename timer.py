@@ -82,14 +82,14 @@ def set_timer_bday(update: Update, context: CallbackContext) -> None:
             due_bd = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER)
         elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 1:
             update.message.reply_text(
-                text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
+                text='Твой день рождения уже завтра! Пришлашаем тебя создать вишлист!',
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
             due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
             due_bd = datetime.datetime(yearcurrent, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER)
         elif (datetime.date(yearcurrent, monthofbirth, dayofbirth) - datetime.datetime.today().date()).days == 2:
             update.message.reply_text(
-                text='Привет! С наступающим днем рождения! Пришлашаем тебя создать вишлист!',
+                text='Твой день рождения уже послезавтра! Пришлашаем тебя создать вишлист!',
                 reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
             due = datetime.datetime(yearcurrent + 1, monthofbirth, dayofbirth, HOUR_REMINDER, MINUTE_REMINDER) - datetime.timedelta(days=2)
@@ -118,7 +118,8 @@ def set_timer_bday(update: Update, context: CallbackContext) -> None:
             user_id_df_bday.to_csv(USER_IDS_FILE_BDAY)
             logger.info('updated file of users birthdays chat_id: %s', chat_id)
 
-        logger.info(f'{update.message.chat.id} successfully set timer on {str(due)}. Now is {str(datetime.datetime.today())}')
+        logger.info(f'{update.message.chat.id} successfully set reminder on {str(due)}. Now is {str(datetime.datetime.today())}')
+        logger.info(f'{update.message.chat.id} successfully set congratulator on {str(due_bd)}. Now is {str(datetime.datetime.today())}')
         if job_removed:
             logger.info(f'old {update.message.chat.id} timer was removed')
 
@@ -142,4 +143,4 @@ def remove_timer_bday(update: Update, context: CallbackContext) -> None:
 
     job_removed = remove_job_if_exists(str(chat_id), context)
     if job_removed:
-        logger.info(f'old {update.message.chat.id} timer was removed')
+        logger.info(f'old {update.message.chat.id} reminder and congratulator were removed')
