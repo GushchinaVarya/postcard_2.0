@@ -6,7 +6,7 @@ import datetime
 
 from buttons import *
 from logger_debug import *
-from config import HOUR_REMINDER, MINUTE_REMINDER
+from config import HOUR_REMINDER, MINUTE_REMINDER, HAPPYBIRTHDAY_PHOTO
 
 logger = getLogger(__name__)
 
