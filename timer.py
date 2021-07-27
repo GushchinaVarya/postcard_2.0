@@ -25,10 +25,15 @@ def alarm(context: CallbackContext):
 
 @debug_request
 def happybday(context: CallbackContext):
+    keyboard = [
+        [InlineKeyboardButton(BUTTON3_SHOW, callback_data=CALLBACK_BUTTON3_SHOW)],
+        [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
+    ]
     job = context.job
     context.bot.sendPhoto(
         chat_id=job.context,
-        photo=open(HAPPYBIRTHDAY_PHOTO),
+        photo=open(HAPPYBIRTHDAY_PHOTO, 'rb'),
+        reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True)
     )
     logger.info(f'successfully congratulated for {job.context}. Now is {str(datetime.datetime.today())}')
 
