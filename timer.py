@@ -26,9 +26,9 @@ def alarm(context: CallbackContext):
 @debug_request
 def happybday(context: CallbackContext):
     job = context.job
-    context.bot.send_message(
-        job.context,
-        text='С ДР!!!!!!',
+    context.bot.sendPhoto(
+        chat_id=job.context,
+        photo=open(HAPPYBIRTHDAY_PHOTO),
     )
     logger.info(f'successfully congratulated for {job.context}. Now is {str(datetime.datetime.today())}')
 
