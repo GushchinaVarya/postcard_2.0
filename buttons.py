@@ -8,6 +8,7 @@ BUTTON7_ADD_SCREENSHOT = "Добавить скриншот перевода"
 BUTTON8_NO_SCREENSHOT = "Отправить без скриншота"
 BUTTON9_READY = "Отправить!"
 BUTTON10_DELETE_WISHLIST = "Удалить вишлист"
+BUTTON11_REPLY_TO_POSTCARD = "Ответить отправителю"
 
 CALLBACK_BUTTON1_FIND = "callback_button_find"
 CALLBACK_BUTTON2_MAKE = "callback_button_make"

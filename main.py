@@ -30,6 +30,9 @@ WISH_MODE = 14
 FROM_MODE = 15
 PIC_NUM = 16
 DELETE_MODE = 17
+REPLY_MODE = 18
+REPLY_USER = 19
+REPLY_WISHLIST = 20
 
 
 @debug_request
@@ -37,6 +40,7 @@ def start_buttons_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
+    context.user_data[REPLY_MODE] = 'False'
     chat_id = update.message.chat.id
     logger.info(f'chat_id {chat_id} started conversation')
     user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
@@ -71,6 +75,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'chat_id {chat_id} wants to find wishlist')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
@@ -82,6 +87,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'chat_id {chat_id} wants to see its wishlists')
         wishlists = show_my_wishlists(user_id=chat_id, limit=10)
         if len(wishlists) == 0:
@@ -129,6 +135,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'{chat_id} started making wishlist')
         update.callback_query.bot.send_message(
             chat_id=chat_id,
@@ -146,6 +153,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         try:
             found_wishlist = context.user_data[FOUND_WISHLIST]
             logger.info(f'{chat_id} started generating postcard for wishlist {found_wishlist}')
@@ -192,6 +200,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         context.user_data[PIC_NUM] = 0
         logger.info(f'{chat_id} choose pic0')
         try:
@@ -214,6 +223,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         context.user_data[PIC_NUM] = 1
         logger.info(f'{chat_id} choose pic1')
         try:
@@ -235,6 +245,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         context.user_data[PIC_NUM] = 2
         logger.info(f'{chat_id} choose pic2')
         try:
@@ -256,6 +267,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'True'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         context.user_data[PIC_NUM] = 3
         logger.info(f'{chat_id} choose pic3')
         try:
@@ -301,6 +313,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'True'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'{chat_id} writing from')
         try:
             found_wishlist = context.user_data[FOUND_WISHLIST]
@@ -322,6 +335,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'{chat_id} chose anonymous sending')
         try:
             found_wishlist = context.user_data[FOUND_WISHLIST]
@@ -352,6 +366,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'{chat_id} sending screenshot')
         try:
             found_wishlist = context.user_data[FOUND_WISHLIST]
@@ -372,6 +387,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[FROM_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         logger.info(f'{chat_id} chose no screenshot')
         try:
             wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
@@ -386,9 +402,17 @@ def do_create(update: Update, context: CallbackContext):
                 chat_id=wishlist_author_user_id,
                 text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
             )
+            callback_button_name = 'callback_button_reply|'+str(chat_id)+'|'+str(wishlist[0][1])
+            reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
+            reply_buttons_df = reply_buttons_df.append(pd.DataFrame({'callback_button_name': [callback_button_name],
+                                                                     'time_created':[str(datetime.datetime.now())[:19]]})).reset_index(drop=True)
+            reply_buttons_df.to_csv(REPLY_BUTTONS_FILE)
+            logger.info(f'button {callback_button_name} added to file of reply buttons chat_id')
+            keyboard = [[InlineKeyboardButton(BUTTON11_REPLY_TO_POSTCARD, callback_data=callback_button_name)]]
             bot.sendPhoto(
                 chat_id=wishlist_author_user_id,
                 photo=open(pic_name, 'rb'),
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
             update.callback_query.bot.send_message(
                 chat_id=chat_id,
@@ -416,6 +440,7 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
         try:
             wishlist = find_wishlist(namelowreg=(context.user_data[FOUND_WISHLIST]).lower(), limit=1)
             wishlist_author_user_id = wishlist[0][0]
@@ -425,6 +450,14 @@ def do_create(update: Update, context: CallbackContext):
             else:
                 pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
             bot = update.callback_query.bot
+            callback_button_name = 'callback_button_reply|' + str(chat_id) + '|' + str(wishlist[0][1])
+            reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
+            reply_buttons_df = reply_buttons_df.append(pd.DataFrame({'callback_button_name': [callback_button_name],
+                                                                     'time_created': [str(datetime.datetime.now())[
+                                                                                      :19]]})).reset_index(drop=True)
+            reply_buttons_df.to_csv(REPLY_BUTTONS_FILE)
+            logger.info(f'button {callback_button_name} added to file of reply buttons chat_id')
+            keyboard = [[InlineKeyboardButton(BUTTON11_REPLY_TO_POSTCARD, callback_data=callback_button_name)]]
             bot.send_message(
                 chat_id=wishlist_author_user_id,
                 text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
@@ -436,6 +469,7 @@ def do_create(update: Update, context: CallbackContext):
             bot.sendPhoto(
                 chat_id=wishlist_author_user_id,
                 photo=open(PIC_FOLDER+'screen_' + str(chat_id) + '.png', 'rb'),
+                reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
             )
             bot.send_message(
                 chat_id=chat_id,
@@ -463,9 +497,35 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[FROM_MODE] = 'False'
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'True'
+        context.user_data[REPLY_MODE] = 'False'
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f"Введите название вишлиста который нужно удалить (просто имя без знака #)",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+    elif init in pd.read_csv(REPLY_BUTTONS_FILE, index_col=0).callback_button_name.values:
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'True'
+        context.user_data[REPLY_USER] = init.split('|')[1]
+        context.user_data[REPLY_WISHLIST] = init.split('|')[2]
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f"Введите сообщение. Оно придет пользователю от имени бота.",
+            #text=f"Вы отправите ответ юзеру {init.split('|')[1]} на открытку которую он послал по вишлисту {init.split('|')[2]}",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+    elif init[:21] == 'callback_button_reply':
+        context.user_data[FROM_MODE] = 'False'
+        context.user_data[WISH_MODE] = 'False'
+        context.user_data[DELETE_MODE] = 'False'
+        context.user_data[REPLY_MODE] = 'False'
+        context.user_data[REPLY_USER] = init.split('|')[1]
+        context.user_data[REPLY_WISHLIST] = init.split('|')[2]
+        update.callback_query.bot.send_message(
+            chat_id=chat_id,
+            text=f"К сожалению ответить на эту открытку уже нельзя, так как открытка была отправлена слишком давно.️",
             reply_markup=ReplyKeyboardRemove(),
         )
 
@@ -510,6 +570,7 @@ def message_handler(update: Update, context: CallbackContext):
             context.user_data[FROM_MODE] = 'False'
             context.user_data[WISH_MODE] = 'False'
             context.user_data[DELETE_MODE] = 'False'
+            context.user_data[REPLY_MODE] = 'False'
             wishlistname = text[1:]
             logger.info(f'{chat_id} tries to find wishlist with name {wishlistname}')
             wishlist = find_wishlist(namelowreg=wishlistname.lower(), limit=1)
@@ -597,6 +658,23 @@ def message_handler(update: Update, context: CallbackContext):
                         logger.info(f'wishlist {wishlistname} deleted')
                 else:
                     update.message.reply_text('Вишлист c таким именем не найден. Введите другой вишлист или нажмите /start')
+            elif context.user_data[REPLY_MODE] == 'True':
+                reply_message = text
+                reply_user_id = int(context.user_data[REPLY_USER])
+                reply_wishlist = context.user_data[REPLY_WISHLIST]
+                context.bot.send_message(
+                    chat_id=reply_user_id,
+                    text=f'''
+📩Вам новое ообщение от автора вишлиста {reply_wishlist} в ответ на вашу открытку:
+
+"<b><i>{reply_message}</i></b>"
+
+Обратите внимание, что если вы отправляли открытку анонимно, то автор вишлиста не знает кому пришло это сообщение.
+''',
+                    parse_mode=ParseMode.HTML,
+                )
+                update.message.reply_text('Сообщение отправлено')
+
             else:
                 update.message.reply_text('Неверный формат ввода')
         except:
@@ -610,6 +688,7 @@ def photo_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
+    context.user_data[REPLY_MODE] = 'False'
     name_screenshot = PIC_FOLDER+'screen_'+str(update.message.chat.id)+'.png'
     photo_file = update.message.photo[-1].get_file()
     photo_file.download(name_screenshot)
@@ -626,6 +705,7 @@ def name_handler(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
+    context.user_data[REPLY_MODE] = 'False'
     name = update.message.text
     if len(name.split(' ')) > 1:
         update.message.reply_text(
@@ -785,6 +865,7 @@ def thanks_speech_handler(update: Update, context: CallbackContext) -> int:
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
+    context.user_data[REPLY_MODE] = 'False'
     user = update.effective_user
 
     update.message.reply_text(
@@ -904,6 +985,7 @@ def cancel_handler(update: Update, context: CallbackContext) -> int:
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
+    context.user_data[REPLY_MODE] = 'False'
     logger.info(f'{update.message.chat.id} cancelled making wishlist')
     update.message.reply_text(
         text='Вы отменили создание вишлиста. Чтобы вернуться нажмите /start',
@@ -917,6 +999,7 @@ def about(update: Update, context: CallbackContext):
     context.user_data[WISH_MODE] = 'False'
     context.user_data[FROM_MODE] = 'False'
     context.user_data[DELETE_MODE] = 'False'
+    context.user_data[REPLY_MODE] = 'False'
     keyboard = [
         [InlineKeyboardButton(BUTTON1_FIND, callback_data=CALLBACK_BUTTON1_FIND)],
         [InlineKeyboardButton(BUTTON2_MAKE, callback_data=CALLBACK_BUTTON2_MAKE)],
