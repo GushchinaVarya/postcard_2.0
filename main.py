@@ -500,9 +500,6 @@ def message_handler(update: Update, context: CallbackContext):
                         parse_mode=ParseMode.HTML,
                         disable_web_page_preview=True
                     )
-                    update.message.reply_text(
-                        text='Чтобы найти другой вишлист нажмите /start'
-                    )
                 else:
                     logger.info(f'no wishlist with name {wishlistname}')
                     update.message.reply_text(
@@ -522,7 +519,12 @@ def message_handler(update: Update, context: CallbackContext):
                 keyboard = [[InlineKeyboardButton(BUTTON4_GENERATE_POSTCARD, callback_data=CALLBACK_BUTTON4_GENERATE_POSTCARD)]]
                 reply_text = print_wishlist(wishlist[0])
                 update.message.reply_text(
-                    text=f'Вишлист <b>{wishlist[0][1]}</b> найден!✔️\n\n{reply_text}\n\n\nТеперь вы знаете что хочет получить автор вишлиста.\nМожете пожертвовать в одну их этих организаций и сгенерировать открытку. Бот отправит ее автору. Чтобы вернуться в начало нажмите /start',
+                    text=f'''
+Вишлист <b>{wishlist[0][1]}</b> найден!✔️
+
+{reply_text}
+
+<b>Если вы хотите поздравить автора пожертвуйте в одну из этих организаций и нажмите кнопку "Я совершил пожертвование!"</b>''',
                     reply_markup=InlineKeyboardMarkup(keyboard, one_time_keyboard=True),
                     parse_mode=ParseMode.HTML,
                     disable_web_page_preview=True

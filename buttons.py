@@ -19,9 +19,6 @@ CALLBACK_BUTTON7_ADD_SCREENSHOT = "callback_button_add_screenshot"
 CALLBACK_BUTTON8_NO_SCREENSHOT = "callback_button_no_screenshot"
 CALLBACK_BUTTON9_READY = "callback_button_ready"
 CALLBACK_BUTTON10_DELETE_WISHLIST = "callback_button_delete_wishlist"
-CALLBACK_BUTTON11_SAVE_WISHLIST = "callback_button_save_wishlist"
-
-BUTTON_SAVE_WISHLIST = "Coхранить вишлист"
 
 BUTTON_PIC0 = "1"
 BUTTON_PIC1 = "2"
