@@ -402,10 +402,10 @@ def do_create(update: Update, context: CallbackContext):
                 chat_id=wishlist_author_user_id,
                 text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
             )
-            callback_button_name = 'callback_button_reply|'+str(chat_id)+'|'+str(wishlist[0][1])
+            callback_button_name = 'callback_button_reply|'+str(chat_id)+'|'+str(datetime.datetime.now())[:19]
             reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
             reply_buttons_df = reply_buttons_df.append(pd.DataFrame({'callback_button_name': [callback_button_name],
-                                                                     'time_created':[str(datetime.datetime.now())[:19]]})).reset_index(drop=True)
+                                                                     'wishlist': [wishlist[0][1]]})).reset_index(drop=True)
             reply_buttons_df.to_csv(REPLY_BUTTONS_FILE)
             logger.info(f'button {callback_button_name} added to file of reply buttons chat_id')
             keyboard = [[InlineKeyboardButton(BUTTON11_REPLY_TO_POSTCARD, callback_data=callback_button_name)]]
@@ -450,11 +450,10 @@ def do_create(update: Update, context: CallbackContext):
             else:
                 pic_name = PIC_FOLDER+'wish_'+str(chat_id)+'_'+PIC_INFO[str(context.user_data[PIC_NUM])]['pic_name']
             bot = update.callback_query.bot
-            callback_button_name = 'callback_button_reply|' + str(chat_id) + '|' + str(wishlist[0][1])
+            callback_button_name = 'callback_button_reply|' + str(chat_id) + '|' + str(datetime.datetime.now())[:19]
             reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
             reply_buttons_df = reply_buttons_df.append(pd.DataFrame({'callback_button_name': [callback_button_name],
-                                                                     'time_created': [str(datetime.datetime.now())[
-                                                                                      :19]]})).reset_index(drop=True)
+                                                                     'wishlist': [wishlist[0][1]]})).reset_index(drop=True)
             reply_buttons_df.to_csv(REPLY_BUTTONS_FILE)
             logger.info(f'button {callback_button_name} added to file of reply buttons chat_id')
             keyboard = [[InlineKeyboardButton(BUTTON11_REPLY_TO_POSTCARD, callback_data=callback_button_name)]]
@@ -509,11 +508,11 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[REPLY_MODE] = 'True'
         context.user_data[REPLY_USER] = init.split('|')[1]
-        context.user_data[REPLY_WISHLIST] = init.split('|')[2]
+        reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
+        context.user_data[REPLY_WISHLIST] = reply_buttons_df[reply_buttons_df.callback_button_name == init].wishlist.values[-1]
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f"Введите сообщение. Оно придет пользователю от имени бота.",
-            #text=f"Вы отправите ответ юзеру {init.split('|')[1]} на открытку которую он послал по вишлисту {init.split('|')[2]}",
             reply_markup=ReplyKeyboardRemove(),
         )
     elif init[:21] == 'callback_button_reply':
@@ -521,8 +520,6 @@ def do_create(update: Update, context: CallbackContext):
         context.user_data[WISH_MODE] = 'False'
         context.user_data[DELETE_MODE] = 'False'
         context.user_data[REPLY_MODE] = 'False'
-        context.user_data[REPLY_USER] = init.split('|')[1]
-        context.user_data[REPLY_WISHLIST] = init.split('|')[2]
         update.callback_query.bot.send_message(
             chat_id=chat_id,
             text=f"К сожалению ответить на эту открытку уже нельзя, так как открытка была отправлена слишком давно.️",
