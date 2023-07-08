@@ -403,9 +403,9 @@ def do_create(update: Update, context: CallbackContext):
                 text=f'💌 ВАМ НОВАЯ ОТКРЫТКА!💌 \n\n\n',
             )
             callback_button_name = 'callback_button_reply|'+str(chat_id)+'|'+str(datetime.datetime.now())[:19]
+            logger.info(f'PLACE {callback_button_name}')
             reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
-            reply_buttons_df = reply_buttons_df.append(pd.DataFrame({'callback_button_name': [callback_button_name],
-                                                                     'wishlist': [wishlist[0][1]]})).reset_index(drop=True)
+            reply_buttons_df = pd.concat([reply_buttons_df, pd.DataFrame([{'callback_button_name': callback_button_name, 'wishlist': wishlist[0][1]}])], ignore_index=True)
             reply_buttons_df.to_csv(REPLY_BUTTONS_FILE)
             logger.info(f'button {callback_button_name} added to file of reply buttons chat_id')
             keyboard = [[InlineKeyboardButton(BUTTON11_REPLY_TO_POSTCARD, callback_data=callback_button_name)]]
@@ -452,8 +452,7 @@ def do_create(update: Update, context: CallbackContext):
             bot = update.callback_query.bot
             callback_button_name = 'callback_button_reply|' + str(chat_id) + '|' + str(datetime.datetime.now())[:19]
             reply_buttons_df = pd.read_csv(REPLY_BUTTONS_FILE, index_col=0)
-            reply_buttons_df = reply_buttons_df.append(pd.DataFrame({'callback_button_name': [callback_button_name],
-                                                                     'wishlist': [wishlist[0][1]]})).reset_index(drop=True)
+            reply_buttons_df = pd.concat([reply_buttons_df, pd.DataFrame([{'callback_button_name': callback_button_name, 'wishlist': wishlist[0][1]}])], ignore_index=True)
             reply_buttons_df.to_csv(REPLY_BUTTONS_FILE)
             logger.info(f'button {callback_button_name} added to file of reply buttons chat_id')
             keyboard = [[InlineKeyboardButton(BUTTON11_REPLY_TO_POSTCARD, callback_data=callback_button_name)]]
