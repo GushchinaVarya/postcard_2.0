@@ -45,7 +45,8 @@ def start_buttons_handler(update: Update, context: CallbackContext):
     logger.info(f'chat_id {chat_id} started conversation')
     user_id_df = pd.read_csv(USER_IDS_FILE, index_col=0)
     if chat_id not in user_id_df.user_id.values:
-        user_id_df = user_id_df.append(pd.DataFrame({'user_id': np.array([chat_id])})).reset_index(drop=True)
+        user_id_df = pd.concat([user_id_df,
+                   pd.DataFrame([{'user_id': chat_id}])], ignore_index=True)
         user_id_df.to_csv(USER_IDS_FILE)
         logger.info(f'added to file of unique users chat_id {chat_id}')
     keyboard = [

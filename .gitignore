@@ -1,3 +1,4 @@
+sync_files
 config.py
 __pycache__
 wishlist.db

@@ -115,7 +115,8 @@ def set_timer_bday(update: Update, context: CallbackContext) -> None:
 
         user_id_df_bday = pd.read_csv(USER_IDS_FILE_BDAY, index_col=0)
         if chat_id not in user_id_df_bday.user_id.values:
-            user_id_df_bday = user_id_df_bday.append(pd.DataFrame({'user_id': np.array([chat_id]), 'bday':np.array([dateofbirth])})).reset_index(drop=True)
+            user_id_df_bday = pd.concat([user_id_df_bday, pd.DataFrame([{'user_id': chat_id, 'bday':np.array([dateofbirth])}])],
+                                   ignore_index=True)
             user_id_df_bday.to_csv(USER_IDS_FILE_BDAY)
             logger.info('added to file of users birthdays chat_id: %s', chat_id)
         if chat_id in user_id_df_bday.user_id.values:
